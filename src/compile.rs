@@ -3,7 +3,11 @@ use color_eyre::eyre::{eyre, Context, OptionExt, Result};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
-    collections::{HashMap, HashSet}, env, fs, os::unix::{fs::symlink, process::CommandExt}, path::{Path, PathBuf}, process::Command
+    collections::{HashMap, HashSet},
+    env, fs,
+    os::unix::{fs::symlink, process::CommandExt},
+    path::{Path, PathBuf},
+    process::Command,
 };
 
 use crate::run_build_script::BuildScriptResult;
@@ -169,7 +173,7 @@ impl CrateJob {
         self.common.add_metadaten_env(cargo, src, &mut command)?;
         command
             .arg("--crate-name")
-            .arg(&self.common.pname)
+            .arg(&self.common.crate_name)
             .arg("--edition=".to_string() + self.common.edition.as_str())
             .arg(src.join(&self.entrypoint))
             .arg("--check-cfg")
@@ -204,7 +208,7 @@ impl CrateJob {
             self.all_deps.insert(dep.path.clone());
             self.all_deps.extend(dep_metadata.deps);
         }
-        if ["bin", "cdylib", "proc_macro"].contains(&self.crate_type.as_str()) {
+        if ["bin", "cdylib", "proc-macro"].contains(&self.crate_type.as_str()) {
             for arg in &self.common.link_args {
                 command.arg("-C").arg(format!("link-arg={arg}"));
             }
@@ -223,15 +227,17 @@ impl CrateJob {
         for feature in &self.common.features {
             command.arg("--cfg").arg(format!("feature=\"{feature}\""));
         }
-        let features = self
-            .common
-            .all_features
-            .iter()
-            .map(|f| format!("\"{f}\""))
-            .fold(String::new(), |a, b| a + ", " + &b);
-        command
-            .arg("--check-cfg")
-            .arg(format!("cfg(feature, values({features}))"));
+        let mut check_features = "cfg(feature, values(".to_string();
+        for (index, feature) in self.common.all_features.iter().enumerate() {
+            if index != 0 {
+                check_features.push_str(", ");
+            }
+            check_features.push('"');
+            check_features.push_str(feature);
+            check_features.push('"');
+        }
+        check_features.push_str("))");
+        command.arg("--check-cfg").arg(check_features);
         if self.common.debuginfo {
             command.args(["-C", "debuginfo=2"]);
         } else {
@@ -246,8 +252,7 @@ impl CrateJob {
         let bin = out.join("bin");
         fs::create_dir_all(&bin).context("creating output dir")?;
         command
-            .arg("--out-dir")
-            .arg(bin)
+            .current_dir(bin)
             .arg("-o")
             .arg(&self.target_name)
             .env("CARGO_BIN_NAME", self.target_name);
@@ -322,7 +327,7 @@ impl CrateJob {
         fs::create_dir_all(&lib_dir).context("creating output dir")?;
         let version = cargo_metadata::semver::Version::parse(&self.common.version)
             .context("parsing crate version")?;
-        command.arg("--out-dir").arg(&lib_dir);
+        command.current_dir(&lib_dir);
         let lib_name = format!("lib{}.so", self.target_name);
         let lib_path = lib_dir.join(&lib_name);
         let lib_major_path = lib_dir.join(format!("{}.{}", &lib_name, version.major));
@@ -341,14 +346,16 @@ pub fn run(src: PathBuf, cargo: PathBuf, rustc: PathBuf, job: PathBuf, out: Path
     let mut job: CrateJob = serde_json::from_slice(&fs::read(job).context("reading job")?)
         .context("deserializing job")?;
     let mut command = job
-        .with_build_script()?.lib_path_from_env()
+        .with_build_script()?
+        .lib_path_from_env()
         .command_common(&cargo, &rustc, &src)?;
     match job.crate_type.as_str() {
         "bin" => job.bin(&mut command, &out),
         "lib" => job.lib(&mut command, &out),
-        "proc_macro" => job.proc_macro(&mut command, &out),
+        "proc-macro" => job.proc_macro(&mut command, &out),
         "cdylib" => job.cdylib(&mut command, &out),
         c => Err(eyre!("unknown crate type {c}")),
     }?;
+    println!("executing {command:?}");
     Err(command.exec()).context("executing rustc")
 }

@@ -122,6 +122,7 @@ pub fn run(
         }
     }
     out.pop();
+    println!("executing {command:?}");
     out.push("result.toml");
     let mut script = command
         .stdout(process::Stdio::piped())

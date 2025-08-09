@@ -2,19 +2,14 @@
 rustBuildCrateHook() {
     echo "Executing rustBuildCrateHook"
     runHook preBuild
-    if [ "$crateType" == "bin" ]; then
-        echo "compiling bin crate"
-        nix-rust-build compile-bin "$src" "$rustBuildCrateJobPath" "$out"
-    elif [ "$crateType" == "lib" ]; then
-        echo "compiling lib crate"
-        nix-rust-build compile-lib "$src" "$rustBuildCrateJobPath" "$out"
-    elif [ "$crateType" == "proc_macro" ]; then
-        echo "compiling proc_macro crate"
-        nix-rust-build compile-proc-macro "$src" "$rustBuildCrateJobPath" "$out"
-    else
-        echo "unknown crate type $crateType"
-        exit 1
-    fi
+    cargo="$(command -v cargo)"
+    rustc="$(command -v rustc)"
+    echo "src: $src"
+    echo "cargo: $cargo"
+    echo "rustc: $rustc"
+    echo "jobPath: $rustBuildCrateJobPath"
+    echo "out: $out"
+    nix-rust-build compile "$src" "$cargo" "$rustc" "$rustBuildCrateJobPath" "$out"
     runHook postBuild
     echo "Finished rustBuildCrateHook"
 }

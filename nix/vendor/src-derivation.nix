@@ -10,7 +10,6 @@ lib.extendMkDerivation {
   excludeDrvArgNames = [
     "specialArg"
     "registries"
-    "checksum"
     "fetcher"
   ];
   extendDrvArgs =
@@ -20,7 +19,6 @@ lib.extendMkDerivation {
       version,
       checksum,
       registry_url,
-      fetcher ? fetchurl,
       registries ? crateRegistries,
       nativeBuildInputs ? [ ],
       ...
@@ -32,7 +30,7 @@ lib.extendMkDerivation {
         name = pname;
         inherit version;
       };
-      src = fetcher {
+      src = fetchurl {
         inherit url;
         hash = checksum;
         name = "source-${pname}-${version}.tar.gz";
@@ -52,5 +50,6 @@ lib.extendMkDerivation {
         name = pname;
       };
       nativeBuildInputs = nativeBuildInputs ++ [ unpackSrcHook ];
+      dontFixup = true;
     };
 }

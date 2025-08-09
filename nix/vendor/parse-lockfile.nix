@@ -18,6 +18,5 @@ lib.extendMkDerivation {
       inherit lockFilePath;
       name = "${pname}-${version}-lockfile.json";
       nativeBuildInputs = [ prepareLockfileHook ];
-      preferLocalBuild = true;
     };
 }

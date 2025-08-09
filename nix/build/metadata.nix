@@ -5,13 +5,21 @@ lib:
 }:
 lib.extendMkDerivation {
   constructDrv = mkDerivation;
-  excludeDrvArgNames = [];
-  extendDrvArgs = final: {
-    pname,version,vendorDir,target,...
-  }:{
-    inherit vendorDir target;
-    name = "${pname}-${version}-cargo-metadata.json";
-    preferLocalBuild = true;
-    nativeBuildInputs = [cargoMetadataHook];
-  };
+  excludeDrvArgNames = [ ];
+  extendDrvArgs =
+    final:
+    {
+      pname,
+      version,
+      vendorDir,
+      target,
+      src,
+      ...
+    }:
+    {
+      inherit vendorDir target src;
+      name = "${pname}-${version}-cargo-metadata.json";
+      nativeBuildInputs = [ cargoMetadataHook ];
+      RUST_BACKTRACE="1";
+    };
 }

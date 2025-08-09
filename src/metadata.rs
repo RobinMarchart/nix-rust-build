@@ -1,14 +1,46 @@
 use color_eyre::eyre::{bail, eyre, Context, OptionExt, Result};
 use serde::Serialize;
 use std::{
-    collections::HashMap,
-    env, fs,
-    path::{Path, PathBuf},
+    collections::HashMap, env, fs, path::{Path, PathBuf}
 };
 
 use cargo_metadata::{
     CargoOpt, CrateType, Edition, MetadataCommand, Node, Package, PackageId, TargetKind,
 };
+
+#[derive(Debug,Clone,PartialEq,Eq,Hash)]
+enum PkgId<'s> {
+    Original(&'s PackageId),
+    Modified(String),
+}
+
+impl<'s> PkgId<'s> {
+    fn new(pkg: &'s PackageId, src: &Path) -> Self{
+        let src = src.to_str().expect("package id has non unicode char");
+        if pkg.repr.contains(src) {
+            Self::Modified(pkg.repr.replace(src, "source"))
+        } else {
+            Self::Original(pkg)
+        }
+    }
+}
+
+impl<'s> AsRef<str> for PkgId<'s> {
+    fn as_ref(&self) -> &str {
+        match self {
+            PkgId::Original(p) => p.repr.as_str(),
+            PkgId::Modified(p) => p.as_str(),
+        }
+    }
+}
+
+impl<'s> Serialize for PkgId<'s> {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer {
+        serializer.serialize_str(self.as_ref())
+    }
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -76,10 +108,10 @@ impl<'s> Common<'s> {
     }
 }
 
-#[derive(Debug, Serialize, Clone, Copy)]
+#[derive(Debug, Serialize, Clone)]
 struct Dep<'s> {
     name: &'s str,
-    pkg: &'s PackageId,
+    pkg: PkgId<'s>,
 }
 
 #[derive(Debug, Serialize)]
@@ -128,17 +160,18 @@ impl<'s> ResolvedPackage<'s> {
         for dep in &node.deps {
             let d = Dep {
                 name: &dep.name,
-                pkg: &dep.pkg,
+                pkg: PkgId::new(&dep.pkg, project_dir) ,
             };
             for kind in &dep.dep_kinds {
                 match kind.kind {
-                    cargo_metadata::DependencyKind::Normal => deps.push(d),
-                    cargo_metadata::DependencyKind::Build => build_deps.push(d),
+                    cargo_metadata::DependencyKind::Normal => deps.push(d.clone()),
+                    cargo_metadata::DependencyKind::Build => build_deps.push(d.clone()),
                     _ => {}
                 }
             }
         }
-        let common = Common::from_package(package, node, project_dir, vendor_dir, target)?;
+        let common = Common::from_package(package, node, project_dir, vendor_dir, target)
+            .context("collecting commmon metadata")?;
         let mut build_script = None;
         let mut rust_lib = None;
         let mut c_lib = None;
@@ -200,7 +233,7 @@ impl<'s> ResolvedPackage<'s> {
                     crate_name: make_crate_name(&target.name),
                     deps: deps.clone(),
                     target_name: &target.name,
-                    crate_type: "proc_macro",
+                    crate_type: "proc-macro",
                     entrypoint: make_relative(
                         target.src_path.as_std_path(),
                         project_dir,
@@ -243,7 +276,7 @@ impl<'s> ResolvedPackage<'s> {
                     crate_name: make_crate_name(&target.name),
                     deps: deps.clone(),
                     target_name: &target.name,
-                    crate_type: "cdylib",
+                    crate_type: "bin",
                     entrypoint: make_relative(
                         target.src_path.as_std_path(),
                         project_dir,
@@ -267,13 +300,15 @@ impl<'s> ResolvedPackage<'s> {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct Output<'s> {
-    packages: HashMap<&'s PackageId, ResolvedPackage<'s>>,
-    workspace: HashMap<&'s str, &'s PackageId>,
-    main_package: Option<&'s PackageId>,
+    packages: HashMap<PkgId<'s>, ResolvedPackage<'s>>,
+    workspace: HashMap<&'s str, PkgId<'s>>,
+    main_package: Option<PkgId<'s>>,
 }
 
 fn make_relative<'s>(path: &'s Path, project_dir: &Path, vendor_dir: &Path) -> Result<&'s Path> {
-    if let Ok(path) = path.strip_prefix(project_dir) {
+    if path.is_relative() {
+        Ok(path)
+    } else if let Ok(path) = path.strip_prefix(project_dir) {
         Ok(path)
     } else if let Ok(path) = path.strip_prefix(vendor_dir) {
         let packet_dir = path.components().next().ok_or_eyre("no prefix")?;
@@ -320,26 +355,28 @@ pub fn run(project_dir: PathBuf, vendor_dir: PathBuf, target: String, out: PathB
         .context("collecting metadata")?;
     let packages: HashMap<&PackageId, &Package> =
         metadata.packages.iter().map(|p| (&p.id, p)).collect();
-    let workspace_members: HashMap<&str, &PackageId> = metadata
+    let workspace_members: HashMap<&str, PkgId> = metadata
         .workspace_members
         .iter()
-        .map(|m| -> Result<_> {
+        .map(|p| -> Result<_> {
             Ok((
-                packages.get(m).ok_or_eyre("unknown package")?.name.as_str(),
-                m,
+                packages.get(p).ok_or_eyre("unknown package")?.name.as_str(),
+                PkgId::new(p, &project_dir),
             ))
         })
         .collect::<Result<_>>()?;
     let resolve = metadata.resolve.ok_or_eyre("no resolve in metadata")?;
-    let main_package = resolve.root.as_ref();
-    let mut ready_packages: HashMap<&PackageId, ResolvedPackage> = HashMap::new();
+    let main_package = resolve.root.as_ref().map(|p|PkgId::new(p, &project_dir));
+    let mut ready_packages: HashMap<PkgId, ResolvedPackage> = HashMap::new();
     for node in &resolve.nodes {
+        let id = PkgId::new(&node.id, &project_dir);
         let package = *packages
             .get(&node.id)
             .ok_or_eyre("getting package for resolve node")?;
         ready_packages.insert(
-            &node.id,
-            ResolvedPackage::from_package(package, node, &project_dir, &vendor_dir, &target)?,
+            id,
+            ResolvedPackage::from_package(package, node, &project_dir, &vendor_dir, &target)
+                .with_context(|| format!("resolving package {}", &node.id))?,
         );
     }
     fs::write(

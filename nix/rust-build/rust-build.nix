@@ -1,6 +1,7 @@
 lib:
 {
   rustPlatform,
+  runCommand,
 }:
 let
   src = lib.fileset.toSource {
@@ -19,4 +20,5 @@ rustPlatform.buildRustPackage (finalAttrs: {
   cargoLock = {
     lockFile = "${src}/Cargo.lock";
   };
+  passthru.tests = import ./tests.nix {inherit runCommand;} finalAttrs.finalPackage;
 })

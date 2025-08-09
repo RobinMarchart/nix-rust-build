@@ -1,7 +1,7 @@
 lib:
 {
   mkDerivation,
-  buildCrateHook,
+  runBuildScriptHook,
 }:
 lib.extendMkDerivation {
   constructDrv = mkDerivation;
@@ -31,6 +31,7 @@ lib.extendMkDerivation {
     "entrypoint"
     "targetName"
     "buildScriptRun"
+
   ];
   extendDrvArgs =
     final:
@@ -57,14 +58,12 @@ lib.extendMkDerivation {
       deps ? [ ],
       optimize ? true,
       debuginfo ? true,
-      crateType,
-      entrypoint,
-      targetName,
-      buildScriptRun ? null,
+      buildScript,
       ...
     }:
     {
-      rustBuildCrateJob = builtins.toJSON {
+      inherit buildScript;
+      rustRunBuildScriptJob = builtins.toJSON {
         inherit
           rustcFlags
           cfgs
@@ -88,13 +87,9 @@ lib.extendMkDerivation {
           deps
           optimize
           debuginfo
-          crateType
-          entrypoint
-          targetName
-          buildScriptRun
           ;
       };
-      passAsFile = [ "rustBuildCrateJob" ];
-      nativeBuildInputs = [ buildCrateHook ];
+      passAsFile = [ "rustRunBuildScriptJob" ];
+      nativeBuildInputs = [ runBuildScriptHook ];
     };
 }
