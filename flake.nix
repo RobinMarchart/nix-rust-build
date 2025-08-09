@@ -20,11 +20,18 @@
         pkgs = import nixpkgs {
           inherit system;
         };
-
+        inherit (pkgs) lib;
         rust-build = import ./nix/default.nix pkgs;
         bootstrap =
           (rust-build.build {
-            src = ./.;
+            src = lib.fileset.toSource {
+              root = ./.;
+              fileset = lib.fileset.unions [
+                ./src
+                ./Cargo.toml
+                ./Cargo.lock
+              ];
+            };
             pname = "nix-rust-build";
             version = "0.0.1";
           }).overrideAttrs

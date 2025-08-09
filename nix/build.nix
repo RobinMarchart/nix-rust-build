@@ -1,4 +1,5 @@
-lib: {
+lib:
+{
   collectDependencies,
   mkVendoredDerivation,
   mkMetadataDerivation,
@@ -10,6 +11,8 @@ lib: {
   pname,
   version,
   lockFilePath ? "/Cargo.lock",
+  features ? [ ],
+  noDefaultFeatures ? false,
 }:
 let
   collectedCrates = collectDependencies {
@@ -28,6 +31,8 @@ let
       pname
       version
       src
+      features
+      noDefaultFeatures
       ;
   };
 in

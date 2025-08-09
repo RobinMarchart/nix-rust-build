@@ -14,12 +14,19 @@ lib.extendMkDerivation {
       vendorDir,
       target,
       src,
+      features ? [ ],
+      noDefaultFeatures ? false,
       ...
     }:
     {
-      inherit vendorDir target src;
+      inherit
+        vendorDir
+        target
+        src
+        features
+        noDefaultFeatures
+        ;
       name = "${pname}-${version}-cargo-metadata.json";
       nativeBuildInputs = [ cargoMetadataHook ];
-      RUST_BACKTRACE="1";
     };
 }
