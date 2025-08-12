@@ -64,6 +64,8 @@ lib.extendMkDerivation {
       targetName,
       buildScriptRun ? null,
       links? null,
+      nativeBuildInputs ? [ ],
+      passAsFile ? [ ],
       ...
     }:
     let
@@ -103,7 +105,7 @@ lib.extendMkDerivation {
           links
           ;
       };
-      passAsFile = [ "rustBuildCrateJob" ];
-      nativeBuildInputs = [ buildCrateHook ];
+      passAsFile = passAsFile ++ [ "rustBuildCrateJob" ];
+      nativeBuildInputs = nativeBuildInputs ++ [ buildCrateHook ];
     };
 }

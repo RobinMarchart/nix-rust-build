@@ -16,6 +16,7 @@ lib.extendMkDerivation {
       src,
       features ? [ ],
       noDefaultFeatures ? false,
+      nativeBuildInputs ? [ ],
       ...
     }:
     {
@@ -27,6 +28,6 @@ lib.extendMkDerivation {
         noDefaultFeatures
         ;
       name = "${pname}-${version}-cargo-metadata.json";
-      nativeBuildInputs = [ cargoMetadataHook ];
+      nativeBuildInputs = nativeBuildInputs ++ [ cargoMetadataHook ];
     };
 }

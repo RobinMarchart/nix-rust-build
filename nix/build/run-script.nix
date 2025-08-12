@@ -60,7 +60,9 @@ lib.extendMkDerivation {
       optimize ? true,
       debuginfo ? true,
       buildScript,
-      links? null,
+      links ? null,
+      nativeBuildInputs ? [ ],
+      passAsFile ? [ ],
       ...
     }:
     {
@@ -92,7 +94,7 @@ lib.extendMkDerivation {
           links
           ;
       };
-      passAsFile = [ "rustRunBuildScriptJob" ];
-      nativeBuildInputs = [ runBuildScriptHook ];
+      passAsFile = passAsFile ++ [ "rustRunBuildScriptJob" ];
+      nativeBuildInputs = nativeBuildInputs ++ [ runBuildScriptHook ];
     };
 }
