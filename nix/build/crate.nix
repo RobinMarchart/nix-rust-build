@@ -31,6 +31,7 @@ lib.extendMkDerivation {
     "entrypoint"
     "targetName"
     "buildScriptRun"
+    "links"
   ];
   extendDrvArgs =
     final:
@@ -63,6 +64,7 @@ lib.extendMkDerivation {
       targetName,
       buildScriptRun ? null,
       separateDebugInfo ? true,
+      links? null,
       ...
     }:
     {
@@ -95,6 +97,7 @@ lib.extendMkDerivation {
           entrypoint
           targetName
           buildScriptRun
+          links
           ;
       };
       passAsFile = [ "rustBuildCrateJob" ];
