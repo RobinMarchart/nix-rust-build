@@ -42,7 +42,6 @@
             });
       in
       {
-        inherit rust-build;
         packages = {
           inherit bootstrap rust-build;
           default = rust-build;
@@ -71,9 +70,8 @@
       }
     ))
     // {
-      overlays.default = final: prev: rec {
+      overlays.default = final: prev: {
         rust-build = import ./nix/default.nix final;
-        default = rust-build;
       };
     };
 }
