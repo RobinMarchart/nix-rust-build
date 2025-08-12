@@ -63,12 +63,15 @@ lib.extendMkDerivation {
       entrypoint,
       targetName,
       buildScriptRun ? null,
-      separateDebugInfo ? true,
       links? null,
       ...
     }:
+    let
+      separateDebugInfo = debuginfo && (crateType == "bin" || crateType == "cdylib");
+      dontStrip = crateType!="bin" && crateType != "cdylib";
+        in
     {
-      inherit separateDebugInfo src;
+      inherit separateDebugInfo dontStrip src;
       rustBuildCrateJob = builtins.toJSON {
         inherit
           rustcFlags
