@@ -1,5 +1,5 @@
 use cargo_metadata::Edition;
-use color_eyre::eyre::{eyre, Context, OptionExt, Result};
+use color_eyre::eyre::{bail, eyre, Context, OptionExt, Result};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -18,6 +18,7 @@ pub struct RustLibMetadata {
     pub deps: HashSet<PathBuf>,
     pub metadata: HashMap<String, String>,
     pub lib_path: HashSet<PathBuf>,
+    pub links: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -279,6 +280,9 @@ impl CrateJob {
             .arg(out);
         let lib_path = out.join(format!("lib{}-{hash}.rlib", &self.common.crate_name));
         let metadata_path = out.join("rust-lib.toml");
+        if !self.metadata.is_empty() && self.common.links.is_none(){
+            bail!("metadata without links");
+        }
         fs::write(
             metadata_path,
             toml::to_string_pretty(&RustLibMetadata {
@@ -286,6 +290,7 @@ impl CrateJob {
                 deps: self.all_deps,
                 metadata: self.metadata,
                 lib_path: self.lib_path,
+                links: self.common.links,
             })
             .context("serializing library metadata")?,
         )
@@ -319,6 +324,7 @@ impl CrateJob {
                 deps: HashSet::new(),
                 metadata: self.metadata,
                 lib_path: HashSet::new(),
+                links: None
             })
             .context("serializing library metadata")?,
         )

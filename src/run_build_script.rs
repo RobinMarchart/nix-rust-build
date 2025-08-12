@@ -10,7 +10,7 @@ use std::{
     sync::LazyLock,
 };
 
-use color_eyre::eyre::{eyre, Context, ContextCompat, OptionExt, Result};
+use color_eyre::eyre::{bail, eyre, Context, ContextCompat, OptionExt, Result};
 use owo_colors::OwoColorize;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -67,7 +67,7 @@ pub fn run(
         .env("RUSTDOC", &rustdoc)
         .env("CARGO_ENCODED_RUSTFLAGS", info.rustc_flags.join("\x1f"));
     info.add_metadaten_env(&cargo, &src, &mut command)?;
-    if let Some(links) = info.links {
+    if let Some(links) = &info.links {
         command.env("CARGO_MANIFEST_LINKS", links);
     }
     if info.optimize {
@@ -122,7 +122,16 @@ pub fn run(
         )
         .context("deserializing rust lib metadata")?;
         for (key, value) in dep_metadata.metadata {
-            command.env(format!("DEP_{}_{key}", dep.name), value);
+            command.env(
+                format!(
+                    "DEP_{}_{key}",
+                    dep_metadata
+                        .links
+                        .as_ref()
+                        .ok_or_eyre("crate must have links to use metadata")?
+                ),
+                value,
+            );
         }
     }
     out.pop();
@@ -141,6 +150,10 @@ pub fn run(
     }
     if !script.wait()?.success() {
         return Err(eyre!("build script execution failed"));
+    }
+
+    if !result.metadata.is_empty() && info.links.is_none(){
+        bail!("build script has metadata without links")
     }
 
     fs::write(
