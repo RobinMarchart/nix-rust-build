@@ -8,6 +8,8 @@ use cargo_metadata::{
     CargoOpt, CrateType, Edition, MetadataCommand, Node, Package, PackageId, TargetKind,
 };
 
+use cargo_util_schemas::manifest::FeatureName;
+
 #[derive(Debug,Clone,PartialEq,Eq,Hash)]
 enum PkgId<'s> {
     Original(&'s PackageId),
@@ -57,7 +59,7 @@ struct Common<'s> {
     rust_version: Option<String>,
     readme: Option<&'s Path>,
     target: &'s str,
-    features: &'s Vec<String>,
+    features: &'s Vec<FeatureName>,
     all_features: Vec<&'s String>,
     edition: Edition,
     main_workspace: bool,

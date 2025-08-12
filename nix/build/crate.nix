@@ -35,6 +35,7 @@ lib.extendMkDerivation {
   extendDrvArgs =
     final:
     {
+      src,
       rustcFlags ? [ ],
       cfgs ? [ ],
       linkArgs ? [ ],
@@ -61,9 +62,11 @@ lib.extendMkDerivation {
       entrypoint,
       targetName,
       buildScriptRun ? null,
+      separateDebugInfo ? true,
       ...
     }:
     {
+      inherit separateDebugInfo src;
       rustBuildCrateJob = builtins.toJSON {
         inherit
           rustcFlags

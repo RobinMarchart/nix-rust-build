@@ -120,8 +120,8 @@ struct CrateJob {
 impl CrateJob {
     fn with_build_script(&mut self) -> Result<&mut Self> {
         if let Some(path) = self.build_script_run.as_ref() {
-            let mut build_script: BuildScriptResult = toml::from_slice(
-                &fs::read(path.join("result.toml")).context("reading build script result")?,
+            let mut build_script: BuildScriptResult = toml::from_str(
+                &fs::read_to_string(path.join("result.toml")).context("reading build script result")?,
             )
             .context("deserializing build script result")?;
             self.metadata = build_script.metadata;
@@ -197,8 +197,8 @@ impl CrateJob {
             command.arg("--check-cfg").arg(cfg);
         }
         for dep in &self.common.deps {
-            let dep_metadata: RustLibMetadata = toml::from_slice(
-                &fs::read(dep.path.join("rust-lib.toml")).context("reading rust lib metadata")?,
+            let dep_metadata: RustLibMetadata = toml::from_str(
+                &fs::read_to_string(dep.path.join("rust-lib.toml")).context("reading rust lib metadata")?,
             )
             .context("deserializing rust lib metadata")?;
             command

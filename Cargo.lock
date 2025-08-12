@@ -586,6 +586,7 @@ name = "nix-rust-build"
 version = "0.1.0"
 dependencies = [
  "base64",
+ "cargo-util-schemas",
  "cargo_metadata",
  "clap",
  "color-eyre",

@@ -113,8 +113,8 @@ pub fn run(
         command.env(name, "1");
     }
     for dep in info.deps {
-        let dep_metadata: RustLibMetadata = toml::from_slice(
-            &fs::read(dep.path.join("rust-lib.toml")).context("reading rust lib metadata")?,
+        let dep_metadata: RustLibMetadata = toml::from_str(
+            &fs::read_to_string(dep.path.join("rust-lib.toml")).context("reading rust lib metadata")?,
         )
         .context("deserializing rust lib metadata")?;
         for (key, value) in dep_metadata.metadata {
