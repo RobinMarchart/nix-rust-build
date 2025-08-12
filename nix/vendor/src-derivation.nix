@@ -39,7 +39,7 @@ lib.extendMkDerivation {
     {
       inherit src;
       preferLocalBuild = true;
-      allowSubstitutes = false;
+      dontInstall = true;
       name = "source-${pname}-${version}";
       passthru.pkg-info = {
         inherit
