@@ -67,6 +67,9 @@ pub fn run(
         .env("RUSTDOC", &rustdoc)
         .env("CARGO_ENCODED_RUSTFLAGS", info.rustc_flags.join("\x1f"));
     info.add_metadaten_env(&cargo, &src, &mut command)?;
+    if let Some(links) = info.links{
+        command.env("CARGO_MANIFEST_LINKS", links);
+    }
     if info.optimize {
         command.env("OPT_LEVEL", "3").env("PROFILE", "release");
     } else {

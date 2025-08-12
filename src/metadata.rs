@@ -1,7 +1,9 @@
 use color_eyre::eyre::{bail, eyre, Context, OptionExt, Result};
 use serde::Serialize;
 use std::{
-    collections::HashMap, env, fs, path::{Path, PathBuf}
+    collections::HashMap,
+    env, fs,
+    path::{Path, PathBuf},
 };
 
 use cargo_metadata::{
@@ -10,14 +12,14 @@ use cargo_metadata::{
 
 use cargo_util_schemas::manifest::FeatureName;
 
-#[derive(Debug,Clone,PartialEq,Eq,Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum PkgId<'s> {
     Original(&'s PackageId),
     Modified(String),
 }
 
 impl<'s> PkgId<'s> {
-    fn new(pkg: &'s PackageId, src: &Path) -> Self{
+    fn new(pkg: &'s PackageId, src: &Path) -> Self {
         let src = src.to_str().expect("package id has non unicode char");
         if pkg.repr.contains(src) {
             Self::Modified(pkg.repr.replace(src, "source"))
@@ -39,7 +41,8 @@ impl<'s> AsRef<str> for PkgId<'s> {
 impl<'s> Serialize for PkgId<'s> {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
     where
-        S: serde::Serializer {
+        S: serde::Serializer,
+    {
         serializer.serialize_str(self.as_ref())
     }
 }
@@ -63,6 +66,7 @@ struct Common<'s> {
     all_features: Vec<&'s String>,
     edition: Edition,
     main_workspace: bool,
+    links: Option<&'s str>,
 }
 
 impl<'s> Common<'s> {
@@ -106,6 +110,7 @@ impl<'s> Common<'s> {
             all_features: package.features.keys().collect(),
             edition: package.edition,
             main_workspace: package.source.is_none(),
+            links: package.links.as_deref(),
         })
     }
 }
@@ -162,7 +167,7 @@ impl<'s> ResolvedPackage<'s> {
         for dep in &node.deps {
             let d = Dep {
                 name: &dep.name,
-                pkg: PkgId::new(&dep.pkg, project_dir) ,
+                pkg: PkgId::new(&dep.pkg, project_dir),
             };
             for kind in &dep.dep_kinds {
                 match kind.kind {
@@ -368,7 +373,7 @@ pub fn run(project_dir: PathBuf, vendor_dir: PathBuf, target: String, out: PathB
         })
         .collect::<Result<_>>()?;
     let resolve = metadata.resolve.ok_or_eyre("no resolve in metadata")?;
-    let main_package = resolve.root.as_ref().map(|p|PkgId::new(p, &project_dir));
+    let main_package = resolve.root.as_ref().map(|p| PkgId::new(p, &project_dir));
     let mut ready_packages: HashMap<PkgId, ResolvedPackage> = HashMap::new();
     for node in &resolve.nodes {
         let id = PkgId::new(&node.id, &project_dir);

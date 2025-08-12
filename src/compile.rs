@@ -49,6 +49,7 @@ pub struct CrateJobCommon {
     pub crate_name: String,
     pub edition: Edition,
     pub deps: Vec<ResolvedDep>,
+    pub links: Option<String>,
     pub optimize: bool,
     pub debuginfo: bool,
 }
@@ -121,7 +122,8 @@ impl CrateJob {
     fn with_build_script(&mut self) -> Result<&mut Self> {
         if let Some(path) = self.build_script_run.as_ref() {
             let mut build_script: BuildScriptResult = toml::from_str(
-                &fs::read_to_string(path.join("result.toml")).context("reading build script result")?,
+                &fs::read_to_string(path.join("result.toml"))
+                    .context("reading build script result")?,
             )
             .context("deserializing build script result")?;
             self.metadata = build_script.metadata;
@@ -198,7 +200,8 @@ impl CrateJob {
         }
         for dep in &self.common.deps {
             let dep_metadata: RustLibMetadata = toml::from_str(
-                &fs::read_to_string(dep.path.join("rust-lib.toml")).context("reading rust lib metadata")?,
+                &fs::read_to_string(dep.path.join("rust-lib.toml"))
+                    .context("reading rust lib metadata")?,
             )
             .context("deserializing rust lib metadata")?;
             command
