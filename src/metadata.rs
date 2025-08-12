@@ -1,6 +1,7 @@
 use color_eyre::eyre::{bail, eyre, Context, OptionExt, Result};
 use serde::Serialize;
 use std::{
+    borrow::Cow,
     collections::HashMap,
     env, fs,
     path::{Path, PathBuf},
@@ -117,7 +118,7 @@ impl<'s> Common<'s> {
 
 #[derive(Debug, Serialize, Clone)]
 struct Dep<'s> {
-    name: &'s str,
+    name: Cow<'s, str>,
     pkg: PkgId<'s>,
 }
 
@@ -166,7 +167,7 @@ impl<'s> ResolvedPackage<'s> {
         let mut deps: Vec<Dep> = vec![];
         for dep in &node.deps {
             let d = Dep {
-                name: &dep.name,
+                name: Cow::Borrowed(&dep.name),
                 pkg: PkgId::new(&dep.pkg, project_dir),
             };
             for kind in &dep.dep_kinds {
@@ -185,21 +186,17 @@ impl<'s> ResolvedPackage<'s> {
         let mut bins = Vec::new();
 
         for target in &package.targets {
-            if target.name == "build-script-build" {
-                if target.kind != [TargetKind::CustomBuild] {
-                    bail!("build script has wrong target kind {:?}", target.kind)
-                }
-                if target.crate_types != [CrateType::Bin] {
-                    bail!("build script has wrong crate type {:?}", target.crate_types)
-                }
+            if target.kind.contains(&TargetKind::CustomBuild)
+                && target.crate_types.contains(&CrateType::Bin)
+            {
                 let script = CompileJobBuildScript {
                     main_deps: deps.clone(),
                     main_crate_name: make_crate_name(&package.name),
                     common: CompileJobCommon {
-                        crate_name: "build_script_build".to_string(),
+                        crate_name: "build_script".to_string(),
                         deps: build_deps.clone(),
                         crate_type: "bin",
-                        target_name: &target.name,
+                        target_name: "build_script",
                         entrypoint: make_relative(
                             target.src_path.as_std_path(),
                             project_dir,
@@ -210,12 +207,10 @@ impl<'s> ResolvedPackage<'s> {
                 if build_script.replace(script).is_some() {
                     bail!("more than one buildscript in crate")
                 }
-            } else if target.kind.contains(&TargetKind::Lib)
+            }
+            if target.kind.contains(&TargetKind::Lib)
                 && target.crate_types.contains(&CrateType::Lib)
             {
-                if c_lib.is_some() {
-                    bail!("already clib")
-                }
                 let job = CompileJobCommon {
                     crate_name: make_crate_name(&target.name),
                     deps: deps.clone(),
@@ -233,9 +228,6 @@ impl<'s> ResolvedPackage<'s> {
             } else if target.kind.contains(&TargetKind::ProcMacro)
                 && target.crate_types.contains(&CrateType::ProcMacro)
             {
-                if c_lib.is_some() {
-                    bail!("already clib")
-                }
                 let job = CompileJobCommon {
                     crate_name: make_crate_name(&target.name),
                     deps: deps.clone(),
@@ -253,12 +245,6 @@ impl<'s> ResolvedPackage<'s> {
             } else if target.kind.contains(&TargetKind::CDyLib)
                 && target.crate_types.contains(&CrateType::CDyLib)
             {
-                if rust_lib.is_some() {
-                    bail!("already rust lib")
-                }
-                if !bins.is_empty() {
-                    bail!("already bin")
-                }
                 let job = CompileJobCommon {
                     crate_name: make_crate_name(&target.name),
                     deps: deps.clone(),
@@ -276,9 +262,6 @@ impl<'s> ResolvedPackage<'s> {
             } else if target.kind.contains(&TargetKind::Bin)
                 && target.crate_types.contains(&CrateType::Bin)
             {
-                if c_lib.is_some() {
-                    bail!("already clib")
-                }
                 let job = CompileJobCommon {
                     crate_name: make_crate_name(&target.name),
                     deps: deps.clone(),
@@ -291,6 +274,15 @@ impl<'s> ResolvedPackage<'s> {
                     )?,
                 };
                 bins.push(job);
+            }
+        }
+
+        if let Some(lib) = rust_lib.as_ref() {
+            for bin in &mut bins {
+                bin.deps.push(Dep {
+                    name: Cow::Owned(lib.crate_name.clone()),
+                    pkg: PkgId::new(&package.id, project_dir),
+                });
             }
         }
 

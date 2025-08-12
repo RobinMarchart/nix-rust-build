@@ -12,7 +12,7 @@ rustRunBuildScriptHook() {
     echo "src: $src"
     echo "jobPath: $rustRunBuildScriptJobPath"
     echo "out: $out"
-    nix-rust-build run-build-script "${buildScript}/bin/build-script-build" "$cargo" "$rustc" "$rustdoc" "$src" "$rustRunBuildScriptJobPath" "$out"
+    nix-rust-build run-build-script "${buildScript}/bin/build_script" "$cargo" "$rustc" "$rustdoc" "$src" "$rustRunBuildScriptJobPath" "$out"
     runHook postBuild
     echo "Finished rustRunBuildScriptHook"
 }
