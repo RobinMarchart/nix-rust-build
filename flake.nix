@@ -44,8 +44,8 @@
       {
         inherit rust-build;
         packages = {
-          inherit bootstrap;
-          default = rust-build.rust-build;
+          inherit bootstrap rust-build;
+          default = rust-build;
           test = rust-build.mkVendoredDerivation {
             collectedCrates = rust-build.collectDependencies {
               src = ./.;

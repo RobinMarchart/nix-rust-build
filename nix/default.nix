@@ -122,31 +122,36 @@ let
       };
     };
   fix = lib.fixedPoints.makeExtensible combine;
-  extract = attr: {
-    inherit (attr)
-      targets
-      target
-      crateOverrides
-      rust-build
-      mkStandardCrateRegistry
-      crateRegistries
-      vendorBuildHook
-      unpackSrcHook
-      prepareLockfileHook
-      buildCrateHook
-      cargoMetadataHook
-      runBuildScriptHook
-      mkLockfileDerivation
-      mkSourceDerivation
-      collectDependencies
-      mkVendoredDerivation
-      mkMetadataDerivation
-      mkBuildCrateDerivation
-      mkRunBuildScriptDerivation
-      mkBuildPlan
-      build
-      ;
-    modify = f: extract (attr.extend f);
-  };
+  extract =
+    attr:
+    let
+      out = {
+        inherit (attr)
+          targets
+          target
+          crateOverrides
+          rust-build
+          mkStandardCrateRegistry
+          crateRegistries
+          vendorBuildHook
+          unpackSrcHook
+          prepareLockfileHook
+          buildCrateHook
+          cargoMetadataHook
+          runBuildScriptHook
+          mkLockfileDerivation
+          mkSourceDerivation
+          collectDependencies
+          mkVendoredDerivation
+          mkMetadataDerivation
+          mkBuildCrateDerivation
+          mkRunBuildScriptDerivation
+          mkBuildPlan
+          build
+          ;
+        modify = f: extract (attr.extend f);
+      };
+    in
+    out.rust-build.overrideAttrs { passthru = out; };
 in
 extract fix
