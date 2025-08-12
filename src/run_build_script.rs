@@ -67,7 +67,7 @@ pub fn run(
         .env("RUSTDOC", &rustdoc)
         .env("CARGO_ENCODED_RUSTFLAGS", info.rustc_flags.join("\x1f"));
     info.add_metadaten_env(&cargo, &src, &mut command)?;
-    if let Some(links) = info.links{
+    if let Some(links) = info.links {
         command.env("CARGO_MANIFEST_LINKS", links);
     }
     if info.optimize {
@@ -117,7 +117,8 @@ pub fn run(
     }
     for dep in info.deps {
         let dep_metadata: RustLibMetadata = toml::from_str(
-            &fs::read_to_string(dep.path.join("rust-lib.toml")).context("reading rust lib metadata")?,
+            &fs::read_to_string(dep.path.join("rust-lib.toml"))
+                .context("reading rust lib metadata")?,
         )
         .context("deserializing rust lib metadata")?;
         for (key, value) in dep_metadata.metadata {
@@ -212,7 +213,6 @@ static SCRIPT_OUT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"^\s*cargo::?([a-z\-]+)=((?:([^=\s]+)=)?("(.*)"\s*|([^\s]+)\s*|.+))$"#).unwrap()
 });
 
-
 fn parse_script_output_line(line: &str, out: &mut BuildScriptResult, error: &mut bool) {
     if let Some(capture) = SCRIPT_OUT_REGEX.captures(line) {
         match capture
@@ -224,121 +224,82 @@ fn parse_script_output_line(line: &str, out: &mut BuildScriptResult, error: &mut
                 return;
             }
             "rustc-link-arg" => {
-                out.link_args.push(
-                    capture
-                        .get(2)
-                        .expect("not optional")
-                        .as_str()
-                        .trim()
-                        .to_string(),
-                );
+                let arg = capture.get(2).expect("not optional").as_str().trim();
+                out.link_args.push(arg.to_string());
+                println!("added link arg: \"{arg}\"");
                 return;
             }
             "rustc-link-arg-cdylib" => {
-                out.link_args_cdylib.push(
-                    capture
-                        .get(2)
-                        .expect("not optional")
-                        .as_str()
-                        .trim()
-                        .to_string(),
-                );
+                let arg = capture.get(2).expect("not optional").as_str().trim();
+                out.link_args_cdylib.push(arg.to_string());
+                println!("added cdylib link arg: \"{arg}\"");
                 return;
             }
 
             "rustc-link-arg-bin" => {
                 if let Some(name) = capture.get(3) {
-                    match out.link_args_bin.entry(name.as_str().to_string()) {
+                    let name = name.as_str();
+                    let arg = capture
+                        .get(4)
+                        .expect("not optional at this point")
+                        .as_str()
+                        .trim();
+                    match out.link_args_bin.entry(name.to_string()) {
                         Occupied(e) => e.into_mut(),
                         Vacant(e) => e.insert(Vec::new()),
                     }
-                    .push(
-                        capture
-                            .get(4)
-                            .expect("not optional at this point")
-                            .as_str()
-                            .trim()
-                            .to_string(),
-                    );
+                    .push(arg.to_string());
+                    println!("added link arg for bin {name}: \"{arg}\"");
                     return;
                 }
             }
             "rustc-link-arg-bins" => {
-                out.link_args_bins.push(
-                    capture
-                        .get(2)
-                        .expect("not optional")
-                        .as_str()
-                        .trim()
-                        .to_string(),
-                );
+                let arg = capture.get(2).expect("not optional").as_str().trim();
+                out.link_args_bins.push(arg.to_string());
+                println!("added bin link arg: \"{arg}\"");
                 return;
             }
             "rustc-link-arg-tests" | "rustc-link-arg-examples" | "rustc-link-arg-benches" => {
                 return;
             }
             "rustc-link-lib" => {
-                if let Some(name) = capture.get(5) {
-                    out.link_lib.push(name.as_str().to_string());
+                if let Some(name) = capture.get(6) {
+                    let link = name.as_str();
+                    out.link_lib.push(link.to_string());
+                    println!("link to {link}");
                     return;
                 }
             }
             "rustc-link-search" => {
-                out.lib_path.insert(
-                    capture
-                        .get(4)
-                        .expect("not optional")
-                        .as_str()
-                        .trim()
-                        .to_string()
-                        .into(),
-                );
+                let link_path = capture.get(4).expect("not optional").as_str().trim();
+                out.lib_path.insert(link_path.to_string().into());
+                println!("added link path: {link_path}");
                 return;
             }
             "rustc-flags" => {
-                out.flags.push(
-                    capture
-                        .get(2)
-                        .expect("not optional")
-                        .as_str()
-                        .trim()
-                        .to_string(),
-                );
+                let flags = capture.get(2).expect("not optional").as_str().trim();
+                out.flags.push(flags.to_string());
+                println!("added rustc flag \"{flags}\"");
                 return;
             }
             "rustc-cfg" => {
-                out.cfgs.push(
-                    capture
-                        .get(2)
-                        .expect("not optional")
-                        .as_str()
-                        .trim()
-                        .to_string(),
-                );
+                let cfg = capture.get(2).expect("not optional").as_str().trim();
+                out.cfgs.push(cfg.to_string());
+                println!("added cfg: \"{cfg}\"");
                 return;
             }
             "rustc-check-cfg" => {
-                out.check_cfgs.push(
-                    capture
-                        .get(2)
-                        .expect("not optional")
-                        .as_str()
-                        .trim()
-                        .to_string(),
-                );
+                let check_cfg = capture.get(2).expect("not optional").as_str().trim();
+                out.check_cfgs.push(check_cfg.to_string());
+                println!("added check-cfg: \"{check_cfg}\"");
                 return;
             }
             "rustc-env" => {
                 if let Some(name) = capture.get(3) {
-                    out.envs.insert(
-                        name.as_str().to_string(),
-                        capture
-                            .get(4)
-                            .expect("not optional here")
-                            .as_str()
-                            .trim()
-                            .to_string(),
-                    );
+                    let name = name.as_str();
+                    let val = capture.get(4).expect("not optional here").as_str().trim();
+                    out.envs.insert(name.to_string(), val.to_string());
+                    println!("added env value: {name}=\"{val}\"");
                     return;
                 }
             }
@@ -361,15 +322,10 @@ fn parse_script_output_line(line: &str, out: &mut BuildScriptResult, error: &mut
             }
             "metadata" => {
                 if let Some(name) = capture.get(3) {
-                    out.metadata.insert(
-                        name.as_str().to_string(),
-                        capture
-                            .get(4)
-                            .expect("not optional here")
-                            .as_str()
-                            .trim()
-                            .to_string(),
-                    );
+                    let name = name.as_str();
+                    let val = capture.get(4).expect("not optional here").as_str().trim();
+                    out.metadata.insert(name.to_string(), val.to_string());
+                    println!("added metadata \"{name}\" = \"{val}\"");
                     return;
                 }
             }
