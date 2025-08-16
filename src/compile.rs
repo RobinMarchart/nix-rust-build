@@ -64,7 +64,7 @@ fn p(p: &Option<PathBuf>, base: &Path) -> PathBuf {
 }
 
 impl CrateJobCommon {
-    pub fn add_metadaten_env(&self, cargo: &Path, src: &Path, command: &mut Command) -> Result<()> {
+    pub fn add_metadata_env(&self, cargo: &Path, src: &Path, command: &mut Command) -> Result<()> {
         let version = cargo_metadata::semver::Version::parse(&self.version)
             .context("parsing crate version")?;
         let manifest_path = src.join(&self.manifest_path);
@@ -173,7 +173,7 @@ impl CrateJob {
 
     fn command_common(&mut self, cargo: &Path, rustc: &Path, src: &Path) -> Result<Command> {
         let mut command = Command::new(rustc);
-        self.common.add_metadaten_env(cargo, src, &mut command)?;
+        self.common.add_metadata_env(cargo, src, &mut command)?;
         command
             .arg("--crate-name")
             .arg(&self.common.crate_name)

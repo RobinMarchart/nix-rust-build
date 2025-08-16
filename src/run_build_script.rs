@@ -66,7 +66,7 @@ pub fn run(
         .env("RUSTC", &rustc)
         .env("RUSTDOC", &rustdoc)
         .env("CARGO_ENCODED_RUSTFLAGS", info.rustc_flags.join("\x1f"));
-    info.add_metadaten_env(&cargo, &src, &mut command)?;
+    info.add_metadata_env(&cargo, &src, &mut command)?;
     if let Some(links) = &info.links {
         command.env("CARGO_MANIFEST_LINKS", links);
     }
@@ -124,11 +124,12 @@ pub fn run(
         for (key, value) in dep_metadata.metadata {
             command.env(
                 format!(
-                    "DEP_{}_{key}",
+                    "DEP_{}_{}",
                     dep_metadata
                         .links
                         .as_ref()
-                        .ok_or_eyre("crate must have links to use metadata")?
+                        .ok_or_eyre("crate must have links to use metadata")?.to_uppercase(),
+                    key.to_uppercase()
                 ),
                 value,
             );
