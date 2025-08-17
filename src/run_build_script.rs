@@ -309,6 +309,7 @@ fn parse_script_output_line(line: &str, out: &mut BuildScriptResult, error: &mut
                     capture.get(3).expect("not optional").as_str()
                 );
                 *error = true;
+                return;
             }
             "warning" => {
                 println!(
@@ -316,6 +317,7 @@ fn parse_script_output_line(line: &str, out: &mut BuildScriptResult, error: &mut
                     "warning".yellow(),
                     capture.get(3).expect("not optional").as_str()
                 );
+                return;
             }
             "metadata" => {
                 if capture.get(1).expect("not optional").as_str() == "::" {
