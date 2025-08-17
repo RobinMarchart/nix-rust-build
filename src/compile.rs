@@ -17,8 +17,8 @@ pub struct RustLibMetadata {
     pub lib: PathBuf,
     pub deps: HashSet<PathBuf>,
     pub metadata: HashMap<String, String>,
-    pub lib_path: HashSet<PathBuf>,
     pub links: Option<String>,
+    pub lib_path: HashSet<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -108,7 +108,7 @@ struct CrateJob {
     #[serde(default)]
     metadata: HashMap<String, String>,
     #[serde(default)]
-    lib_path: HashSet<PathBuf>,
+    lib_path: HashSet<String>,
     #[serde(default)]
     link_lib: Vec<String>,
     #[serde(default)]
@@ -165,7 +165,7 @@ impl CrateJob {
     fn lib_path_from_env(&mut self) -> &mut Self {
         if let Ok(var) = env::var("LD_LIBRARY_PATH") {
             for path in var.split(":") {
-                self.lib_path.insert(PathBuf::from(path));
+                self.lib_path.insert(format!("native={}",path));
             }
         }
         self

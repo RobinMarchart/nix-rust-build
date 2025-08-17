@@ -26,7 +26,7 @@ pub struct BuildScriptResult {
     pub link_args_bins: Vec<String>,
     pub link_args_bin: HashMap<String, Vec<String>>,
     pub link_lib: Vec<String>,
-    pub lib_path: HashSet<PathBuf>,
+    pub lib_path: HashSet<String>,
     pub flags: Vec<String>,
     pub cfgs: Vec<String>,
     pub check_cfgs: Vec<String>,
@@ -276,7 +276,7 @@ fn parse_script_output_line(line: &str, out: &mut BuildScriptResult, error: &mut
                 }
             }
             "rustc-link-search" => {
-                let link_path = capture.get(5).expect("not optional").as_str().trim();
+                let link_path = capture.get(3).expect("not optional").as_str().trim();
                 out.lib_path.insert(link_path.to_string().into());
                 println!("added link path: {link_path}");
             }
