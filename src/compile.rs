@@ -123,10 +123,9 @@ impl CrateJob {
     fn with_build_script(&mut self) -> Result<&mut Self> {
         if let Some(path) = self.build_script_run.as_ref() {
             let result_path = path.join("result.toml");
-            println!("reading build script output from {}",result_path.display());
+            println!("reading build script output from {}", result_path.display());
             let mut build_script: BuildScriptResult = toml::from_str(
-                &fs::read_to_string(&result_path)
-                    .context("reading build script result")?,
+                &fs::read_to_string(&result_path).context("reading build script result")?,
             )
             .context("deserializing build script result")?;
             self.metadata = build_script.metadata;
@@ -168,7 +167,7 @@ impl CrateJob {
     fn lib_path_from_env(&mut self) -> &mut Self {
         if let Ok(var) = env::var("LD_LIBRARY_PATH") {
             for path in var.split(":") {
-                self.lib_path.insert(format!("native={}",path));
+                self.lib_path.insert(format!("native={}", path));
             }
         }
         self
@@ -204,10 +203,12 @@ impl CrateJob {
         }
         for dep in &self.common.deps {
             let metadata_path = dep.path.join("rust-lib.toml");
-            println!("reading dependency metadata from {}", metadata_path.display());
+            println!(
+                "reading dependency metadata from {}",
+                metadata_path.display()
+            );
             let dep_metadata: RustLibMetadata = toml::from_str(
-                &fs::read_to_string(&metadata_path)
-                    .context("reading rust lib metadata")?,
+                &fs::read_to_string(&metadata_path).context("reading rust lib metadata")?,
             )
             .context("deserializing rust lib metadata")?;
             command
@@ -221,9 +222,9 @@ impl CrateJob {
             for arg in &self.common.link_args {
                 command.arg("-C").arg(format!("link-arg={arg}"));
             }
-            for lib in &self.lib_path {
-                command.arg("-L").arg(lib);
-            }
+        }
+        for lib in &self.lib_path {
+            command.arg("-L").arg(lib);
         }
         for lib in &self.link_lib {
             command.arg("-l").arg(lib);
@@ -285,7 +286,7 @@ impl CrateJob {
             .arg(out);
         let lib_path = out.join(format!("lib{}-{hash}.rlib", &self.common.crate_name));
         let metadata_path = out.join("rust-lib.toml");
-        if !self.metadata.is_empty() && self.common.links.is_none(){
+        if !self.metadata.is_empty() && self.common.links.is_none() {
             bail!("metadata without links");
         }
         fs::write(
@@ -329,7 +330,7 @@ impl CrateJob {
                 deps: HashSet::new(),
                 metadata: self.metadata,
                 lib_path: HashSet::new(),
-                links: None
+                links: None,
             })
             .context("serializing library metadata")?,
         )
