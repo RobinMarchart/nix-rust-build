@@ -24,22 +24,13 @@ let
           ...
         }:
         let
-          fix_type = val: if builtins.isList val then val else [ val ];
-          get =
-            val:
-            if builtins.hasAttr val crateOverrides then fix_type (builtins.getAttr val crateOverrides) else [ ];
+          get = val: crateOverrides.${val} or [ ];
           overrides = (get "__common") ++ (get pname) ++ (get "${pname}-${version}");
-          f =
-            prev: f:
-            let
-              val = f prev;
-            in
-            if builtins.isAttrs val then prev // val else throw "non attrset returned from overwrite";
           val = (removeAttrs common [ "mainWorkspace" ]) // {
             src = if mainWorkspace then workspaceSrc else sources.${"${pname}-${version}"}.path;
           };
         in
-        builtins.foldl' f val overrides;
+        lib.rustBuild.foldOverrides val overrides;
       patchDeps =
         deps:
         let

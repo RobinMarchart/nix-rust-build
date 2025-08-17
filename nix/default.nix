@@ -1,6 +1,6 @@
 pkgs:
 let
-  lib = pkgs.lib;
+  lib = pkgs.lib / { rustBuild = import ./lib.nix pkgs.lib; };
   registry_import = import ./vendor/registries.nix;
   combine =
     final:
@@ -150,6 +150,18 @@ let
           build
           ;
         modify = f: extract (attr.extend f);
+        withCrateOverrides =
+          override:
+          extract (
+            attr.extend (
+              _: prev: {
+                crateOverrides = lib.rustBuild.mergeListAttrSets [
+                  prev.crateOverrides
+                  override
+                ];
+              }
+            )
+          );
       };
     in
     out.rust-build.overrideAttrs { passthru = out; };
