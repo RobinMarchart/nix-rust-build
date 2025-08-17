@@ -128,7 +128,8 @@ pub fn run(
                     dep_metadata
                         .links
                         .as_ref()
-                        .ok_or_eyre("crate must have links to use metadata")?.to_uppercase(),
+                        .ok_or_eyre("crate must have links to use metadata")?
+                        .to_uppercase(),
                     key.to_uppercase()
                 ),
                 value,
@@ -153,7 +154,7 @@ pub fn run(
         return Err(eyre!("build script execution failed"));
     }
 
-    if !result.metadata.is_empty() && info.links.is_none(){
+    if !result.metadata.is_empty() && info.links.is_none() {
         bail!("build script has metadata without links")
     }
 
@@ -269,11 +270,9 @@ fn parse_script_output_line(line: &str, out: &mut BuildScriptResult, error: &mut
             }
             "rustc-link-arg-tests" | "rustc-link-arg-examples" | "rustc-link-arg-benches" => {}
             "rustc-link-lib" => {
-                if let Some(name) = capture.get(7) {
-                    let link = name.as_str();
-                    out.link_lib.push(link.to_string());
-                    println!("link to {link}");
-                }
+                let link = capture.get(3).expect("not optional").as_str().trim();
+                out.link_lib.push(link.to_string());
+                println!("link to {link}");
             }
             "rustc-link-search" => {
                 let link_path = capture.get(3).expect("not optional").as_str().trim();
