@@ -52,7 +52,11 @@ pub fn run(
         .ok()
         .map(|n| n == "1")
         .unwrap_or(false)
-    { env::var("NIX_BUILD_CORES").context("getting max numbe rof used cores")? } else {"1".to_string()};
+    {
+        env::var("NIX_BUILD_CORES").context("getting max numbe rof used cores")?
+    } else {
+        "1".to_string()
+    };
     command
         .env_remove("RUSTFLAGS")
         .env("CARGO_MAKEFLAGS", "")

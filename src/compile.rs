@@ -175,6 +175,15 @@ impl CrateJob {
     fn command_common(&mut self, cargo: &Path, rustc: &Path, src: &Path) -> Result<Command> {
         let mut command = Command::new(rustc);
         self.common.add_metadata_env(cargo, src, &mut command)?;
+        let cores = if env::var("enableParallelBuilding")
+            .ok()
+            .map(|n| n == "1")
+            .unwrap_or(false)
+        {
+            env::var("NIX_BUILD_CORES").context("getting max numbe rof used cores")?
+        } else {
+            "1".to_string()
+        };
         command
             .arg("--crate-name")
             .arg(&self.common.crate_name)
@@ -191,7 +200,9 @@ impl CrateJob {
             .arg("--emit")
             .arg("link")
             .arg("--crate-type")
-            .arg(&self.crate_type);
+            .arg(&self.crate_type)
+            .arg("-C")
+            .arg(format!("codegen-units={cores}"));
         command.envs(self.envs.iter());
         command.args(&self.common.rustc_flags);
         for arg in &self.common.cfgs {
