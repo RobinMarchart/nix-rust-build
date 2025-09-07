@@ -10,7 +10,6 @@ lib.extendMkDerivation {
   excludeDrvArgNames = [
     "specialArg"
     "registries"
-    "fetcher"
   ];
   extendDrvArgs =
     final:
@@ -51,5 +50,6 @@ lib.extendMkDerivation {
       };
       nativeBuildInputs = nativeBuildInputs ++ [ unpackSrcHook ];
       dontFixup = true;
+      allowSubstitutes = false;
     };
 }

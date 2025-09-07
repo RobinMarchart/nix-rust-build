@@ -65,6 +65,7 @@
                 pkgs.cargo
                 pkgs.rustc
                 pkgs.clippy
+                pkgs.nix-unit
               ];
             };
       }
@@ -73,5 +74,6 @@
       overlays.default = final: prev: {
         rust-build = import ./nix/default.nix final;
       };
+      libTests = import ./tests nixpkgs.lib;
     };
 }

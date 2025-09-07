@@ -34,7 +34,7 @@ lib.extendMkDerivation {
     "links"
   ];
   extendDrvArgs =
-    final:
+    _final:
     {
       src,
       rustcFlags ? [ ],

@@ -3,10 +3,10 @@ lib: rec {
   /**
     # Type
     ```
-    assertAttrWith :: String -> AttrSet | Any -> AttrSet | error
+    assertIsAttrWith :: String -> AttrSet | Any -> AttrSet | error
     ```
   */
-  assertAttrWith = message: val: if builtins.isAttrs val then val else throw message;
+  assertIsAttrWith = message: val: if builtins.isAttrs val then val else throw message;
 
   /**
     Merge two attr sets together recursively.
@@ -59,9 +59,9 @@ lib: rec {
   foldOverrides = builtins.foldl' (
     prev: current:
     if lib.isFunction current then
-      assertAttrWith "The override function did not return an attribute set." (current prev)
+      assertIsAttrWith "The override function did not return an attribute set." (current prev)
     else
-      mergeAttrsDeep prev (assertAttrWith "Overrides must either be a function or attr set." current)
+      mergeAttrsDeep prev (assertIsAttrWith "Overrides must either be a function or attr set." current)
   );
 
   /**
@@ -84,4 +84,192 @@ lib: rec {
     in
     builtins.zipAttrsWith mapper;
 
+  patchSrc =
+    { workspaceSrc, sources }:
+    common@{
+      mainWorkspace,
+      pname,
+      version,
+      ...
+    }:
+    (removeAttrs common [ "mainWorkspace" ])
+    // {
+      src = if mainWorkspace then workspaceSrc else sources.${"${pname}-${version}"}.path;
+    };
+
+  patchOverrides =
+    crateOverrides:
+    let
+      get = val: crateOverrides.${val} or [ ];
+    in
+    common@{ pname, version, ... }:
+    let
+      overrides = (get "__common") ++ (get pname) ++ (get "${pname}-${version}");
+    in
+    foldOverrides common overrides;
+
+  patchCommon =
+    {
+      workspaceSrc,
+      sources,
+      crateOverrides,
+    }:
+    let
+      patchSrc' = patchSrc { inherit workspaceSrc sources; };
+      patchOverrides' = patchOverrides crateOverrides;
+    in
+    common: patchOverrides' (patchSrc' common);
+
+  patchDeps =
+    buildPlan:
+    let
+      mapper =
+        { name, pkg }:
+        {
+          inherit name;
+          path = buildPlan.${pkg}.rustLib;
+        };
+    in
+    builtins.map mapper;
+  patchJob =
+    patchDeps': common:
+    job@{ deps, ... }:
+    let
+      a =
+        common
+        // job
+        // {
+          deps = patchDeps' deps;
+        };
+      a' = if a ? src then a else break a;
+    in
+    a';
+  mkBuildScriptPkg =
+    { mkBuildCrateDerivation, patchJob' }:
+    { common, buildScript }:
+    let
+      buildScript' = removeAttrs buildScript [
+        "mainDeps"
+        "mainCrateName"
+      ];
+    in
+    mkBuildCrateDerivation (patchJob' common buildScript');
+  mkBuildScriptRun =
+    { mkRunBuildScriptDerivation, patchDeps' }:
+    {
+      common,
+      buildScript,
+      buildScriptBin,
+    }:
+    mkRunBuildScriptDerivation (
+      common
+      // {
+
+        deps = patchDeps' buildScript.mainDeps;
+        crateName = buildScript.mainCrateName;
+        buildScript = buildScriptBin;
+      }
+    );
+  mkBuildScriptCombined =
+    {
+      mkBuildCrateDerivation,
+      patchJob',
+      mkRunBuildScriptDerivation,
+      patchDeps',
+    }:
+    let
+      mkBuildScriptPkg' = mkBuildScriptPkg { inherit mkBuildCrateDerivation patchJob'; };
+      mkBuildScriptRun' = mkBuildScriptRun { inherit mkRunBuildScriptDerivation patchDeps'; };
+    in
+    args@{ common, buildScript }:
+    let
+      buildScriptBin = mkBuildScriptPkg' args;
+      buildScriptRun = mkBuildScriptRun' { inherit common buildScript buildScriptBin; };
+    in
+    {
+      common'' = common // {
+        inherit buildScriptRun;
+      };
+      out = { inherit buildScriptBin buildScriptRun; };
+    };
+
+  mkPackage =
+    {
+      mkBuildCrateDerivation,
+      mkRunBuildScriptDerivation,
+      buildPlan,
+      workspaceSrc,
+      sources,
+      crateOverrides,
+    }:
+    let
+      patchCommon' = patchCommon {
+        inherit
+          workspaceSrc
+          sources
+          crateOverrides
+          ;
+      };
+      patchDeps' = patchDeps buildPlan;
+      patchJob' = patchJob patchDeps';
+      mkBuildScriptCombined' = mkBuildScriptCombined {
+        inherit
+
+          mkBuildCrateDerivation
+          patchJob'
+          mkRunBuildScriptDerivation
+          patchDeps'
+          ;
+      };
+    in
+    id:
+    package@{ common, ... }:
+    let
+      common' = patchCommon' common;
+      buildScriptOut =
+        if package ? buildScript && !isNull package.buildScript then
+          mkBuildScriptCombined' {
+            common = common';
+            buildScript = package.buildScript;
+          }
+        else
+          {
+            common'' = common';
+            out = { };
+          };
+      inherit (buildScriptOut) common'' out;
+      patchJob'' =
+        let
+          patchJob'' = patchJob' common'';
+        in
+        job: mkBuildCrateDerivation (patchJob'' job);
+      mkBin =
+        job:
+        let
+          deriv = patchJob'' job;
+        in
+        {
+          name = deriv.pname;
+          value = deriv;
+        };
+      out' =
+        if package ? rustLib && !isNull package.rustLib then
+          out // { rustLib = patchJob'' package.rustLib; }
+        else
+          out;
+      out'' =
+        if package ? cLib && !isNull package.cLib then
+          out' // { cLib = patchJob'' package.cLib; }
+        else
+          out';
+      out''' =
+        if package ? bins && !isNull package.bins then
+          let
+            bins = builtins.listToAttrs (map mkBin package.bins);
+          in
+          out'' // bins // { inherit bins; }
+        else
+          out'';
+    in
+    out''';
 }

@@ -1,6 +1,8 @@
 pkgs:
 let
-  lib = pkgs.lib // { rustBuild = import ./lib.nix pkgs.lib; };
+  lib = pkgs.lib // {
+    rustBuild = import ./lib.nix pkgs.lib;
+  };
   registry_import = import ./vendor/registries.nix;
   combine =
     final:
