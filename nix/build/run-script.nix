@@ -68,6 +68,10 @@ lib.extendMkDerivation {
     {
       inherit buildScript;
       name = "build-script-run-${pname}-${version}";
+      dontUnpack = true;
+      dontPatch = true;
+      dontConfigure = true;
+      dontInstall = true;
       rustRunBuildScriptJob = builtins.toJSON {
         inherit
           rustcFlags
