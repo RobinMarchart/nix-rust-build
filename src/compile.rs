@@ -68,15 +68,13 @@ impl CrateJobCommon {
         let version = cargo_metadata::semver::Version::parse(&self.version)
             .context("parsing crate version")?;
         let manifest_path = src.join(&self.manifest_path);
+        let manifest_dir = manifest_path
+            .parent()
+            .ok_or_eyre("manifest has no parent dir")?;
         command
             .env("CARGO", cargo)
-            .env(
-                "CARGO_MANIFEST_DIR",
-                manifest_path
-                    .parent()
-                    .ok_or_eyre("manifest has no parent dir")?,
-            )
-            .env("CARGO_MANIFEST_PATH", manifest_path)
+            .env("CARGO_MANIFEST_DIR", manifest_dir)
+            .env("CARGO_MANIFEST_PATH", &manifest_path)
             .env("CARGO_PKG_VERSION", &self.version)
             .env("CARGO_PKG_VERSION_MAJOR", version.major.to_string())
             .env("CARGO_PKG_VERSION_MINOR", version.minor.to_string())
@@ -91,7 +89,8 @@ impl CrateJobCommon {
             .env("CARGO_PKG_LICENSE_FILE", p(&self.license_file, src))
             .env("CARGO_PKG_RUST_VERSION", s(&self.rust_version))
             .env("CARGO_PKG_README", p(&self.readme, src))
-            .env("CARGO_CRATE_NAME", &self.crate_name);
+            .env("CARGO_CRATE_NAME", &self.crate_name)
+            .current_dir(manifest_dir);
         Ok(())
     }
 }
