@@ -164,6 +164,17 @@ let
               }
             )
           );
+        withToolchain =
+          toolchain:
+          extract (
+            attr.extend (
+              _: _: {
+                rustc = toolchain;
+                cargo = toolchain;
+                rustdoc = toolchain;
+              }
+            )
+          );
       };
     in
     out.rust-build.overrideAttrs { passthru = out; };
