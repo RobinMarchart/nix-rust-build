@@ -3,7 +3,7 @@ use std::{
         hash_map::Entry::{Occupied, Vacant},
         HashMap, HashSet,
     },
-    fs,
+    env, fs,
     io::{BufRead, BufReader},
     path::{Path, PathBuf},
     process::{self, Command},
@@ -48,6 +48,11 @@ pub fn run(
         serde_json::from_slice(&fs::read(info_path).context("reading build script info")?)
             .context("deserializing build script info")?;
     let mut command = Command::new(script);
+    let cores = if env::var("enableParallelBuilding")
+        .ok()
+        .map(|n| n == "1")
+        .unwrap_or(false)
+    { env::var("NIX_BUILD_CORES").context("getting max numbe rof used cores")? } else {"1".to_string()};
     command
         .env_remove("RUSTFLAGS")
         .env("CARGO_MAKEFLAGS", "")
@@ -62,7 +67,7 @@ pub fn run(
         .env("OUT_DIR", &out)
         .env("TARGET", &info.target)
         .env("HOST", rustc_host_tripple(&rustc)?.trim())
-        .env("NUM_JOBS", "1")
+        .env("NUM_JOBS", cores)
         .env("RUSTC", &rustc)
         .env("RUSTDOC", &rustdoc)
         .env("CARGO_ENCODED_RUSTFLAGS", info.rustc_flags.join("\x1f"));

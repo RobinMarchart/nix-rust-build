@@ -38,7 +38,11 @@ lib.extendMkDerivation {
     {
       inherit src;
       preferLocalBuild = true;
+      dontUnpack = true;
+      dontPatch = true;
+      dontConfigure = true;
       dontInstall = true;
+      dontFixup = true;
       name = "source-${pname}-${version}";
       passthru.pkg-info = {
         inherit
@@ -49,7 +53,6 @@ lib.extendMkDerivation {
         name = pname;
       };
       nativeBuildInputs = nativeBuildInputs ++ [ unpackSrcHook ];
-      dontFixup = true;
       allowSubstitutes = false;
     };
 }
