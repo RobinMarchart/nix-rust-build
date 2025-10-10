@@ -61,6 +61,12 @@ def make_relative [] {
   } else $in
 }
 
+def readFile [file] {
+  if ($file | path exists) {
+    open $file
+  } 
+}
+
 def common [package node id] {
   {
     manifestPath: ($package.manifest_path | make_relative)
@@ -69,7 +75,7 @@ def common [package node id] {
     description: $package.description
     readme: $package.readme
     authors: $package.authors
-    longDescription: (if $package.readme != null { open ($package.manifest_path | path dirname | path join $package.readme) })
+    longDescription: (if $package.readme != null { readFile ($package.manifest_path | path dirname | path join $package.readme) })
     homepage: $package.homepage
     repository: $package.repository
     license: $package.license
