@@ -66,7 +66,7 @@ def lib [job out] {
   let name_hash = ([$job.pname $job.version] ++ $job.features) | str join ":🦀:" | hash sha256 | str substring 0..8
   let lib_path = $out | path join $"lib($job.crateName)-($name_hash).rlib"
   let metadata_path = $out | path join rust-lib.toml
-  if ($job.metadata | is-not-empty) and (job.links? == null) {
+  if ($job.metadata | is-not-empty) and ($job.links? == null) {
     error make {msg: "metadata without links", help: "add links= attribute to Cargo.toml (see cargo docs)"}
   }
   mkdir -v $out
