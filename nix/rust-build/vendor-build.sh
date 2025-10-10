@@ -2,7 +2,7 @@
 rustVendorBuildHook() {
     echo "Executing rustVendorBuildHook"
     runHook preBuild
-    nix-rust-build write-vendor "$jobPath" "$out"
+    nu @write_vendor@ "$jobPath" "$out"
     runHook postBuild
     echo "Finished rustVendorBuildHook"
 }

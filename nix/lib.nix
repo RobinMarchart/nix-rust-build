@@ -150,7 +150,6 @@ lib: rec {
     let
       buildScript' = removeAttrs buildScript [
         "mainDeps"
-        "mainCrateName"
       ];
     in
     mkBuildCrateDerivation (patchJob' common buildScript');
@@ -166,7 +165,7 @@ lib: rec {
       // {
 
         deps = patchDeps' buildScript.mainDeps;
-        crateName = buildScript.mainCrateName;
+        edition = buildScript.edition;
         buildScript = buildScriptBin;
       }
     );

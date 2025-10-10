@@ -2,14 +2,11 @@
 rustBuildCrateHook() {
     echo "Executing rustBuildCrateHook"
     runHook preBuild
-    cargo="$(command -v cargo)"
-    rustc="$(command -v rustc)"
+    echo "job:"
+    cat "$rustBuildCrateJobPath"
     echo "src: $src"
-    echo "cargo: $cargo"
-    echo "rustc: $rustc"
-    echo "jobPath: $rustBuildCrateJobPath"
     echo "out: $out"
-    nix-rust-build compile "$src" "$cargo" "$rustc" "$rustBuildCrateJobPath" "$out"
+    nu @run_build@ "$rustBuildCrateJobPath" "$src" "$out"
     runHook postBuild
     echo "Finished rustBuildCrateHook"
 }

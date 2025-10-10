@@ -2,7 +2,7 @@
 rustPrepareLockfileBuildHook() {
     echo "Executing rustPrepareLockfileBuildHook"
     runHook preBuild
-    nix-rust-build lockfile "${src}/${lockFilePath}" "$out"
+    nu @prepare_lockfile@ "${src}/${lockFilePath}" "$out"
     runHook postBuild
     echo "Finished rustPrepareLockfileBuildHook"
 }

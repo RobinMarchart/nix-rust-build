@@ -53,7 +53,7 @@ pub fn run(
         .map(|n| n == "1")
         .unwrap_or(false)
     {
-        env::var("NIX_BUILD_CORES").context("getting max numbe rof used cores")?
+        env::var("NIX_BUILD_CORES").context("getting max number of used cores")?
     } else {
         "1".to_string()
     };

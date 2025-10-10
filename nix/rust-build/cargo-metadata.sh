@@ -2,7 +2,7 @@
 rustCargoMetadataBuildHook() {
     echo "Executing rustCargoMetadataBuildHook"
     runHook preBuild
-    nix-rust-build metadata "${src}" "${vendorDir}" "$target" "$out"
+    nu @metadata@
     runHook postBuild
     echo "Finished rustCargoMetadataBuildHook"
 }

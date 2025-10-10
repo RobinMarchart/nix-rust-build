@@ -14,6 +14,7 @@ let
         rustc
         cargo
         rustdoc
+        nushell
         rustPlatform
         mkDerivation
         fetchurl
@@ -47,6 +48,7 @@ let
           cargo
           rustc
           rustdoc
+          nushell
           ;
       };
     in
@@ -57,6 +59,7 @@ let
       inherit (pkgs)
         cargo
         rustc
+        nushell
         rustPlatform
         fetchurl
         makeSetupHook

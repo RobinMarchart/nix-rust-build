@@ -2,18 +2,13 @@
 rustRunBuildScriptHook() {
     echo "Executing rustRunBuildScriptHook"
     runHook preBuild
-    cargo="$(command -v cargo)"
-    rustc="$(command -v rustc)"
-    rustdoc="$(command -v rustdoc)"
     echo "buildScript: $buildScript"
-    echo "cargo: $cargo"
-    echo "rustc: $rustc"
-    echo "rustdoc: $rustdoc"
+    echo "job:"
+    cat "$rustRunBuildScriptJobPath"
     echo "src: $src"
-    echo "jobPath: $rustRunBuildScriptJobPath"
     echo "out: $out"
     echo "path: $PATH"
-    nix-rust-build run-build-script "${buildScript}/bin/build_script" "$cargo" "$rustc" "$rustdoc" "$src" "$rustRunBuildScriptJobPath" "$out"
+    nu @run_build_script@ "${buildScript}/bin/build_script" "$rustRunBuildScriptJobPath" "$src" "$out"
     runHook postBuild
     echo "Finished rustRunBuildScriptHook"
 }

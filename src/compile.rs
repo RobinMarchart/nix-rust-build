@@ -35,7 +35,7 @@ pub struct CrateJobCommon {
     pub link_args: Vec<String>,
     pub manifest_path: PathBuf,
     pub version: String,
-    pub authors: Option<String>,
+    pub authors: Option<Vec<String>>,
     pub pname: String,
     pub description: Option<String>,
     pub homepage: Option<String>,
@@ -63,6 +63,10 @@ fn p(p: &Option<PathBuf>, base: &Path) -> PathBuf {
     p.as_deref().map(|p| base.join(p)).unwrap_or_default()
 }
 
+fn o(o: &Option<Vec<String>>) -> String{
+    o.as_deref().map(|v|v.join(" ")).unwrap_or_default()
+}
+
 impl CrateJobCommon {
     pub fn add_metadata_env(&self, cargo: &Path, src: &Path, command: &mut Command) -> Result<()> {
         let version = cargo_metadata::semver::Version::parse(&self.version)
@@ -80,7 +84,7 @@ impl CrateJobCommon {
             .env("CARGO_PKG_VERSION_MINOR", version.minor.to_string())
             .env("CARGO_PKG_VERSION_PATCH", version.patch.to_string())
             .env("CARGO_PKG_VERSION_PRE", version.pre.as_str())
-            .env("CARGO_PKG_AUTHORS", s(&self.authors))
+            .env("CARGO_PKG_AUTHORS", o(&self.authors))
             .env("CARGO_PKG_NAME", &self.pname)
             .env("CARGO_PKG_DESCRIPTION", s(&self.description))
             .env("CARGO_PKG_HOMEPAGE", s(&self.homepage))
