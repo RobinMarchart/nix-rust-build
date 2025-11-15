@@ -20,40 +20,17 @@
         pkgs = import nixpkgs {
           inherit system;
         };
-        inherit (pkgs) lib;
         rust-build = import ./nix/default.nix pkgs;
-        bootstrap =
-          (rust-build.build {
-            src = lib.fileset.toSource {
-              root = ./.;
-              fileset = lib.fileset.unions [
-                ./src
-                ./Cargo.toml
-                ./Cargo.lock
-              ];
-            };
-            pname = "nix-rust-build";
-            version = "0.0.1";
-          }).overrideAttrs
-            (p: {
-              passthru = (p.passthru or { }) // {
-                tests = import ./nix/rust-build/tests.nix { inherit (pkgs) runCommand; } bootstrap;
-              };
-            });
+        compile_test = pkgs.callPackage ./compile_test.nix { inherit rust-build; };
       in
       {
         packages = {
-          inherit bootstrap rust-build;
+          inherit rust-build compile_test;
           default = rust-build;
-          test = rust-build.mkVendoredDerivation {
-            collectedCrates = rust-build.collectDependencies {
-              src = ./.;
-              pname = "nix-rust-build";
-              version = "0.0.1";
-            };
-          };
         };
-        checks = bootstrap.tests;
+        checks = {
+          config = compile_test;
+        };
         devShells.default =
           pkgs.mkShell.override
             {
@@ -74,6 +51,5 @@
       overlays.default = final: prev: {
         rust-build = import ./nix/default.nix final;
       };
-      libTests = import ./tests nixpkgs.lib;
     };
 }

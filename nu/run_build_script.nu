@@ -179,12 +179,19 @@ def main [script job src out] {
     checkCfgs: []
     envs: {}
   }
+  let script_run = run-external $script | complete 
   let output = (
-    run-external $script
+    $script_run.stdout
     | split row "\n"
     | each {parse_command}
     | reduce -f $seed {|i,acc|$acc | merge deep -s append $i}
   )
+  print $script_run.stderr
+  if $script_run.exit_code != 0 {
+    print "build script failed"
+    exit 1
+  }
+  print $"build script exited with ($env.LAST_EXIT_CODE)"
   if $output.error? == true {
     exit 1
   } else {
