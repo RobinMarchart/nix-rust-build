@@ -55,7 +55,7 @@ let
     {
       crateOverrides = { };
       targets = import ./targets.nix;
-      target = targets.${pkgs.system};
+      target = targets.${pkgs.stdenv.hostPlatform.system};
       inherit (pkgs)
         cargo
         rustc

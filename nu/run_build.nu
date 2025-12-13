@@ -57,8 +57,17 @@ def bin [job out] {
   mkdir -v $bin
   {
     pwd: $bin
-    rustcFlags: [-o $job.targetName]
+    rustcFlags: [-o $job.targetName --crate-type bin]
     envs: {CARGO_BIN_NAME: $job.targetName}
+  }
+}
+
+def test [job out] {
+  let bin = $out | path join bin
+  mkdir -v $bin
+  {
+    pwd: $bin
+    rustcFlags: [-o test --test]
   }
 }
 
@@ -79,7 +88,7 @@ def lib [job out] {
   } | to toml | save $metadata_path
   {
     pwd: $out
-    rustcFlags: [-C $"metadata=($name_hash)" -C $"extra-filename=-($name_hash)" --out-dir $out]
+    rustcFlags: [-C $"metadata=($name_hash)" -C $"extra-filename=-($name_hash)" --out-dir $out --crate-type lib]
   }
 }
 
@@ -92,7 +101,7 @@ def proc_macro [job out] {
 
   {
     pwd: $out
-    rustcFlags: [-C $"metadata=($name_hash)" -C $"extra-filename=-($name_hash)" --out-dir $out --extern proc_macro]
+    rustcFlags: [-C $"metadata=($name_hash)" -C $"extra-filename=-($name_hash)" --out-dir $out --extern proc_macro --crate-type proc-macro]
   }
 }
 
@@ -107,7 +116,7 @@ def cdylib [job out] {
   ln -sT $lib_full_path $lib_major_path
   {
     pwd: $lib
-    rustcFlags: [-o $lib_full_path]
+    rustcFlags: [-o $lib_full_path --crate-type cdylib]
   }
 }
 
@@ -117,6 +126,7 @@ def target_specific [out] {
     "lib" => (lib $in $out)
     "proc-macro" => (proc_macro $in $out)
     "cdylib" => (cdylib $in $out)
+    "test" => (test $in $out)
   })
 }
 
@@ -135,7 +145,6 @@ def compile [src] {
       --cap-lints allow
       --target $job.target
       --emit link
-      --crate-type $job.crateType
       -C $"codegen-units=($cores)"
     ]
     ++ $job.rustcFlags
@@ -154,7 +163,7 @@ def compile [src] {
   )
   cd $job.pwd
   load-env ($job.envs | run_common unfold_env)
-  print $"running cargo ($args | str join ' ')"
+  print $"running rustc ($args | str join ' ')"
   exec rustc ...$args
 }
 
