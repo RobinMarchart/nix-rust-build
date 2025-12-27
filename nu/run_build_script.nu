@@ -4,7 +4,7 @@ use std log
 
 def parse_command [] {
   let line = $in
-  let res = $line | parse -r r#'^\s*cargo(?<cargo>::?)(?<cmd>[a-z\-_]+)=(?<full>(?:(?<name>[^=\s]+)=)?(?<val>.+))$'#
+  let res = $line | parse -r r#'^\s*cargo(?<cargo>::?)(?<cmd>[a-z\-_]+)=(?<full>(?:(?<name>[^=\s]+)=)?(?<val>.*))$'#
   if $res == [] {
     print $line
   } else {
@@ -32,7 +32,7 @@ def parse_command [] {
       rustc-link-arg-benches => {}
       rustc-link-arg-bin => {
         if $res.name == null {
-          error make {msg: "rustc-link-arg-bin cargo command has invalid arguments"}
+          print (error make {msg: "rustc-link-arg-bin cargo command has invalid arguments"})
         }
         let name = $res.name | str trim
         let val = $res.val | str trim
@@ -65,13 +65,14 @@ def parse_command [] {
         {checkCfgs: [$full]}
       }
       rustc-env => {
+        print ($res | to text )
         if $res.name == null {
-          error make {msg: "rustc-env cargo command has invalid arguments"}
+          print (error make {msg: "rustc-env cargo command has invalid arguments"})
         }
         let name = $res.name | str trim
         let val = $res.val | str trim
         log info $'added env: ($name)=\"($val)\"'
-        {envs: ({} | insert $name [$val])}
+        {envs: ({} | insert $name $val)}
       }
       metadata => {
         if $res.cargo == "::" {
@@ -184,7 +185,10 @@ def main [script job src out] {
     $script_run.stdout
     | split row "\n"
     | each {parse_command}
-    | reduce -f $seed {|i,acc|$acc | merge deep -s append $i}
+    | reduce -f $seed {|i,acc|
+      print ($i | to text)
+      $acc | merge deep -s append $i
+    }
   )
   print $script_run.stderr
   if $script_run.exit_code != 0 {

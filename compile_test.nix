@@ -11,8 +11,8 @@ let
   src = fetchFromGitHub {
     owner = "owo-uwu-nyaa";
     repo = "jellyfin-tui-rs";
-    rev = "d1376cb2b00dd4b25dc489f358da6339dd751958";
-    hash = "sha256-fWdqVTBE+scYqg51+3eFWRDoF1OMMpg7Tp0+6yyn/Pk=";
+    rev = "436e75e1ceeef6da2607a9cb3ca34a3ec18d875b";
+    hash = "sha256-1fs/6cwO6055Nw2z4mGpjYAYdoQ1P/+h+jycFMmWl/U=";
   };
   jellyfin-tui =
     (rust-build.withCrateOverrides {
@@ -37,4 +37,4 @@ let
         version = "0.1.0";
       };
 in
-runCommand "config" { } ''"${jellyfin-tui}/bin/jellyfin-tui" print config > "$out"''
+runCommand "config" { } ''"${jellyfin-tui}/bin/jellyfin-tui-rs" print config > "$out"''

@@ -8,6 +8,8 @@ def merge_job [n] {
 def with_build_script [job] {
   if $job.buildScriptRun? != null {
     let run = open ($job.buildScriptRun | path join result.toml)
+    let run_envs = $run | get -o envs | default {}
+    print ($run_envs | to text) 
     {
       metadata: $run.metadata
       libPath: $run.libPath
@@ -22,7 +24,7 @@ def with_build_script [job] {
         }
       ))
       checkCfgs: $run.checkCfgs
-      envs: ($run.envs | merge {OUT_DIR: ($job.buildScriptRun | path join output)})
+      envs: ($run.envs | merge {OUT_DIR: ($job.buildScriptRun | path join output)} | merge $run_envs)
     } | run_common prepared_env
   } else {
     {
