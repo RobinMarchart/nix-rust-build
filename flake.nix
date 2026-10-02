@@ -56,5 +56,6 @@
       overlays.default = final: prev: {
         rust-build = import ./nix/default.nix final;
       };
+      rust-build-from-pkgs = import ./nix/default.nix;
     };
 }
