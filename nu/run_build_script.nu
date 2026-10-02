@@ -65,9 +65,8 @@ def parse_command [] {
         {checkCfgs: [$full]}
       }
       rustc-env => {
-        print ($res | to text )
         if $res.name == null {
-          print (error make {msg: "rustc-env cargo command has invalid arguments"})
+          error make {msg: "rustc-env cargo command has invalid arguments"}
         }
         let name = $res.name | str trim
         let val = $res.val | str trim
