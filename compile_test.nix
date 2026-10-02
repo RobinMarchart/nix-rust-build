@@ -3,20 +3,24 @@
   mpv-unwrapped,
   rustPlatform,
   sqlite,
+  chafa,
+  glib,
+  aws-lc,
   rust-build,
   fetchFromGitHub,
-  runCommand,
+  versionCheckHook,
+  installShellFiles,
 }:
 let
   src = fetchFromGitHub {
     owner = "owo-uwu-nyaa";
     repo = "jellyfin-tui-rs";
-    rev = "436e75e1ceeef6da2607a9cb3ca34a3ec18d875b";
-    hash = "sha256-1fs/6cwO6055Nw2z4mGpjYAYdoQ1P/+h+jycFMmWl/U=";
+    rev = "d80c41be578a2e6ebbf32a25757a92df56a693a2";
+    hash = "sha256-lOy6V8kDZ36rEBb50JohzUlC62N1Get0gOXq/EOo9Pg=";
   };
-  jellyfin-tui =
+  jellyhaj =
     (rust-build.withCrateOverrides {
-      libmpv-sys = {
+      mpv-sys = {
         buildInputs = [ mpv-unwrapped ];
         nativeBuildInputs = [
           pkg-config
@@ -30,11 +34,39 @@ let
           rustPlatform.bindgenHook
         ];
       };
+      aws-lc-sys = {
+        buildInputs = [
+          aws-lc.dev
+        ];
+        nativeBuildInputs = [ pkg-config ];
+      };
+      ratatui-image = {
+        buildInputs = [
+          chafa
+          glib
+        ];
+        nativeBuildInputs = [ pkg-config ];
+      };
+      jellyhaj-bin = {
+        nativeBuildInputs = [ installShellFiles ];
+        postInstall = ''
+          echo installing desktop file
+          install -Dm644 $src/jellyhaj.desktop $out/share/applications/jellyhaj.desktop       
+          echo Generating jellyhaj completions
+          mkdir completion
+          ${jellyhaj.workspaceMembers.xtask}/bin/xtask print-completions completion bash zsh fish nushell
+          installShellCompletion completion/*
+          echo Finished generating jellyhaj completions
+        '';
+        nativeInstallCheckInputs = [ versionCheckHook ];
+        versionCheckProgramArg = "--version";
+        doInstallCheck = true;
+      };
     }).build
       {
         inherit src;
         pname = "jellyfin-tui";
-        version = "0.1.0";
+        version = "0.2.1";
       };
 in
-runCommand "config" { } ''"${jellyfin-tui}/bin/jellyfin-tui-rs" print config > "$out"''
+jellyhaj

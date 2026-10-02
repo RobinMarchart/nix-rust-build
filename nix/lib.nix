@@ -84,7 +84,10 @@ lib: rec {
     in
     builtins.zipAttrsWith mapper;
 
-  patchSrc =
+  /**
+    set the correct src depending on the value of mainWorkspace
+  */
+  addSrcRaw =
     { workspaceSrc, sources }:
     common@{
       mainWorkspace,
@@ -97,30 +100,25 @@ lib: rec {
       src = if mainWorkspace then workspaceSrc else sources.${"${pname}-${version}"}.path;
     };
 
-  patchOverrides =
-    crateOverrides:
-    let
-      get = val: crateOverrides.${val} or [ ];
-    in
+  getOverrideRaw = crateOverrides: name: crateOverrides.${name} or [ ];
+
+  prepareCommonRaw =
+    {
+      addSrc,
+      getOverride,
+    }:
+
     common@{ pname, version, ... }:
     let
-      overrides = (get "__common") ++ (get pname) ++ (get "${pname}-${version}");
+      with-src = addSrc common;
+      __common = getOverride "__common";
+      name = getOverride pname;
+      name-version = getOverride "${pname}-${version}";
+      overrides = __common ++ name ++ name-version;
     in
-    foldOverrides common overrides;
+    foldOverrides with-src overrides;
 
-  patchCommon =
-    {
-      workspaceSrc,
-      sources,
-      crateOverrides,
-    }:
-    let
-      patchSrc' = patchSrc { inherit workspaceSrc sources; };
-      patchOverrides' = patchOverrides crateOverrides;
-    in
-    common: patchOverrides' (patchSrc' common);
-
-  patchDeps =
+  findDepsRaw =
     buildPlan:
     let
       mapper =
@@ -129,146 +127,199 @@ lib: rec {
           inherit name;
           path = buildPlan.${pkg}.rustLib;
         };
+      op = map mapper;
     in
-    builtins.map mapper;
-  patchJob =
-    patchDeps': common:
     job@{ deps, ... }:
+    job
+    // {
+      deps = op deps;
+    };
+
+  prepareJobRaw =
+    { findDeps, getOverride }:
+    run_type:
+    { common, job }:
     let
-      a =
-        common
-        // job
-        // {
-          deps = patchDeps' deps;
-        };
-      a' = if a ? src then a else break a;
+      name-type = getOverride "${common.pname}-${run_type}";
+      name-type-version = getOverride "${common.pname}-${run_type}-${common.version}";
+      applied = foldOverrides (common // job) (name-type ++ name-type-version);
     in
-    a';
-  mkBuildScriptPkg =
-    { mkBuildCrateDerivation, patchJob' }:
+    findDeps applied;
+
+  mkBuildScriptPkgRaw =
+    { mkBuildCrateDerivation, prepareJob }:
+    let
+      prepareJob' = prepareJob "script-build";
+    in
     { common, buildScript }:
     let
       buildScript' = removeAttrs buildScript [
         "mainDeps"
       ];
     in
-    mkBuildCrateDerivation (patchJob' common buildScript');
-  mkBuildScriptRun =
-    { mkRunBuildScriptDerivation, patchDeps' }:
+    mkBuildCrateDerivation (prepareJob' {
+      inherit common;
+      job = buildScript';
+    });
+
+  mkBuildScriptRunRaw =
+    { mkRunBuildScriptDerivation, prepareJob }:
+    let
+      prepareJob' = prepareJob "script-run";
+    in
     {
       common,
       buildScript,
       buildScriptBin,
     }:
-    mkRunBuildScriptDerivation (
-      common
-      // {
-
-        deps = patchDeps' buildScript.mainDeps;
+    let
+      job = {
+        deps = buildScript.mainDeps;
         edition = buildScript.edition;
         buildScript = buildScriptBin;
-      }
-    );
-  mkBuildScriptCombined =
-    {
-      mkBuildCrateDerivation,
-      patchJob',
-      mkRunBuildScriptDerivation,
-      patchDeps',
-    }:
-    let
-      mkBuildScriptPkg' = mkBuildScriptPkg { inherit mkBuildCrateDerivation patchJob'; };
-      mkBuildScriptRun' = mkBuildScriptRun { inherit mkRunBuildScriptDerivation patchDeps'; };
-    in
-    args@{ common, buildScript }:
-    let
-      buildScriptBin = mkBuildScriptPkg' args;
-      buildScriptRun = mkBuildScriptRun' { inherit common buildScript buildScriptBin; };
-    in
-    {
-      common'' = common // {
-        inherit buildScriptRun;
       };
-      out = { inherit buildScriptBin buildScriptRun; };
-    };
+    in
+    mkRunBuildScriptDerivation (prepareJob' {
+      inherit common job;
+    });
 
-  mkPackage =
-    {
-      mkBuildCrateDerivation,
-      mkRunBuildScriptDerivation,
-      buildPlan,
-      workspaceSrc,
-      sources,
-      crateOverrides,
-    }:
+  mkLibPkgRaw =
+    { mkBuildCrateDerivation, prepareJob }:
     let
-      patchCommon' = patchCommon {
-        inherit
-          workspaceSrc
-          sources
-          crateOverrides
-          ;
-      };
-      patchDeps' = patchDeps buildPlan;
-      patchJob' = patchJob patchDeps';
-      mkBuildScriptCombined' = mkBuildScriptCombined {
-        inherit
-
-          mkBuildCrateDerivation
-          patchJob'
-          mkRunBuildScriptDerivation
-          patchDeps'
-          ;
-      };
+      prepareJob' = prepareJob "lib";
     in
-    id:
-    package@{ common, ... }:
+    { common, rustLib }:
+    mkBuildCrateDerivation (prepareJob' {
+      inherit common;
+      job = rustLib;
+    });
+
+  mkBinPkgRaw =
+    { mkBuildCrateDerivation, prepareJob }:
     let
-      common' = patchCommon' common;
-      buildScriptOut =
-        if package ? buildScript && !isNull package.buildScript then
-          mkBuildScriptCombined' {
-            common = common';
-            buildScript = package.buildScript;
-          }
+      prepareJob' = prepareJob "bin";
+    in
+    { common, bin }:
+    mkBuildCrateDerivation (prepareJob' {
+      inherit common;
+      job = bin;
+    });
+
+  addBinsRaw =
+    {
+      mkBinPkg,
+    }:
+    {
+      package,
+      common,
+      res,
+    }:
+    if package ? bins && !isNull package.bins then
+      let
+        bins = package.bins;
+        len = builtins.length bins;
+      in
+      (
+        if len == 0 then
+          res
         else
-          {
-            common'' = common';
-            out = { };
-          };
-      inherit (buildScriptOut) common'' out;
-      patchJob'' =
-        let
-          patchJob'' = patchJob' common'';
-        in
-        job: mkBuildCrateDerivation (patchJob'' job);
-      mkBin =
-        job:
-        let
-          deriv = patchJob'' job;
-        in
-        {
-          name = deriv.pname;
-          value = deriv;
+          (
+            if len == 1 then
+              let
+                passthru = if common ? passthru then res // common.passthru else res;
+              in
+              mkBinPkg {
+                common = common // {
+                  inherit passthru;
+                };
+                bin = builtins.elemAt bins 0;
+              }
+            else
+              let
+                mapper =
+                  bin:
+                  let
+                    drv = mkBinPkg { inherit common bin; };
+                  in
+                  {
+                    name = drv.pname;
+                    value = drv;
+                  };
+              in
+              res // builtins.listToAttrs (map mapper bins)
+          )
+
+      )
+    else
+      res;
+
+  addLibRaw =
+    {
+      mkLibPkg,
+      addBins,
+    }:
+    args@{
+      package,
+      common,
+      res,
+    }:
+    if package ? rustLib && !isNull package.rustLib then
+      let
+        rustLib = mkLibPkg {
+          inherit common;
+          inherit (package) rustLib;
         };
-      out' =
-        if package ? rustLib && !isNull package.rustLib then
-          out // { rustLib = patchJob'' package.rustLib; }
-        else
-          out;
-      out'' =
-        if package ? cLib && !isNull package.cLib then
-          out' // { cLib = patchJob'' package.cLib; }
-        else
-          out';
-      out''' =
-        if package ? bins && !isNull package.bins then
-          let
-            bins = builtins.listToAttrs (map mkBin package.bins);
-          in
-          out'' // bins // { inherit bins; }
-        else
-          out'';
-    in
-    out''';
+        res' = res // {
+          inherit rustLib;
+        };
+      in
+      addBins {
+        inherit package common;
+        res = res';
+      }
+    else
+      addBins args;
+
+  addBuildScriptRaw =
+    {
+      mkBuildScriptPkg,
+      mkBuildScriptRun,
+      addLib,
+    }:
+    args@{
+      package,
+      common,
+      res,
+    }:
+    if package ? buildScript && !isNull package.buildScript then
+      let
+        inherit (package) buildScript;
+        buildScriptBin = mkBuildScriptPkg { inherit common buildScript; };
+        buildScriptRun = mkBuildScriptRun { inherit common buildScript buildScriptBin; };
+        common' = common // {
+          inherit buildScriptRun;
+        };
+        res' = res // {
+          inherit buildScriptRun;
+        };
+      in
+      addLib {
+        inherit package;
+        common = common';
+        res = res';
+      }
+    else
+      addLib args;
+
+  mkPackageRaw =
+    {
+      addBuildScript,
+      prepareCommon,
+    }:
+    package@{ common, ... }:
+    addBuildScript {
+      inherit package;
+      res = { };
+      common = prepareCommon common;
+    };
 }

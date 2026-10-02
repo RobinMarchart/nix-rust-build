@@ -2,19 +2,24 @@
   description = "tool that builds rust crates with import from derivation";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    systems.url = "github:nix-systems/default";
-    flake-utils = {
-      url = "github:numtide/flake-utils";
-      inputs.systems.follows = "systems";
-    };
   };
   outputs =
     {
       nixpkgs,
-      flake-utils,
       ...
     }:
-    (flake-utils.lib.eachDefaultSystem (
+    let
+      lib = nixpkgs.lib;
+      eachSystem =
+        f:
+        let
+          forSystem = system: builtins.mapAttrs (name: val: { ${system} = val; }) (f system);
+          sets = map forSystem lib.systems.flakeExposed;
+        in
+        builtins.foldl' lib.attrsets.recursiveUpdate { } sets;
+
+    in
+    (eachSystem (
       system:
       let
         pkgs = import nixpkgs {
@@ -25,7 +30,7 @@
       in
       {
         packages = {
-          inherit rust-build compile_test;
+          inherit rust-build;
           default = rust-build;
         };
         checks = {

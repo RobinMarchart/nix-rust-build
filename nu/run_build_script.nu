@@ -1,6 +1,6 @@
 use ./run_common.nu
 use ./version.nu
-use std log
+use std/log
 
 def parse_command [] {
   let line = $in
@@ -151,17 +151,17 @@ def main [script job src out] {
     | transpose name val
     | each {|v| $v | update val ($v.val.val | str join "," )}
     | append {name: feature val: ($features | str join ",") }
-    | each {|v|$v | update name $"CARGO_CFG_($v.name | str upcase)"}
+    | each {|v|$v | update name $"CARGO_CFG_($v.name | str uppercase)"}
     | run_common to_record 
   )
-  load-env ($job.features | each {|f| {name: $"CARGO_FEATURE_($f |  | str upcase)", val: "1"}} | run_common to_record)
+  load-env ($job.features | each {|f| {name: $"CARGO_FEATURE_($f |  | str uppercase)", val: "1"}} | run_common to_record)
   load-env (
     $job.deps.path
     | each {|p| open ($p | path join rust-lib.toml)}
     | each {|p|
       $p.metadata
       | transpose name val
-      | each {|meta| {name: $"DEP_($p.links | str upcase)_($meta.name | str upcase)", val: $meta.val}}
+      | each {|meta| {name: $"DEP_($p.links | str uppercase)_($meta.name | str uppercase)", val: $meta.val}}
     }
     | flatten
     | run_common to_record

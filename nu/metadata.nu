@@ -1,4 +1,4 @@
-use std assert
+use std/assert
 
 let vendor_dir = $env.vendorDir?
 let project_dir = $env.src? | default . | path expand
@@ -63,7 +63,7 @@ def make_relative [] {
 
 def readFile [file] {
   if ($file | path exists) {
-    open $file
+    open --raw $file | decode
   } 
 }
 
