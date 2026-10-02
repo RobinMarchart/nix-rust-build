@@ -5,7 +5,7 @@ lib:
 }:
 lib.extendMkDerivation {
   constructDrv = mkDerivation;
-  excludeDrvArgNames = [];
+  excludeDrvArgNames = [ ];
   extendDrvArgs =
     final:
     {
@@ -15,6 +15,7 @@ lib.extendMkDerivation {
       ...
     }:
     {
+      __structuredAttrs = true;
       inherit lockFilePath;
       name = "${pname}-${version}-lockfile.json";
       nativeBuildInputs = [ prepareLockfileHook ];

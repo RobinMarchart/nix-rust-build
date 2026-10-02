@@ -62,17 +62,17 @@ lib.extendMkDerivation {
       buildScript,
       links ? null,
       nativeBuildInputs ? [ ],
-      passAsFile ? [ ],
       ...
     }:
     {
+      __structuredAttrs = true;
       inherit buildScript;
       name = "build-script-run-${pname}-${version}";
       dontUnpack = true;
       dontPatch = true;
       dontConfigure = true;
       dontInstall = true;
-      rustRunBuildScriptJob = builtins.toJSON {
+      rustRunBuildScript = {
         inherit
           rustcFlags
           cfgs
@@ -99,7 +99,6 @@ lib.extendMkDerivation {
           links
           ;
       };
-      passAsFile = passAsFile ++ [ "rustRunBuildScriptJob" ];
       nativeBuildInputs = nativeBuildInputs ++ [ runBuildScriptHook ];
     };
 }

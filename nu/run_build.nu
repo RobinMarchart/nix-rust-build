@@ -169,8 +169,8 @@ def compile [src] {
   exec rustc ...$args
 }
 
-def main [job src out] {
-  let job = open -r $job | from json
+def main [ src out] {
+  let job = open -r $env.NIX_ATTRS_JSON_FILE | from json | get rustBuildCrate
   run_common env_from_context
     | merge_job (with_build_script $job)
     | merge_job ({envs: (run_common common_env $job $src)})

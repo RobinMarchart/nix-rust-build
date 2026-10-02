@@ -14,15 +14,14 @@ lib.extendMkDerivation {
     final:
     {
       collectedCrates,
-      passAsFile ? [ ],
       nativeBuildInputs ? [ ],
     }:
     {
+      __structuredAttrs = true;
       passthru = { inherit collectedCrates; };
       name = "rust-vendored-src";
       preferLocalBuild = true;
-      job = builtins.toJSON collectedCrates;
-      passAsFile = passAsFile ++ [ "job" ];
+      job = collectedCrates;
       dontUnpack = true;
       nativeBuildInputs = nativeBuildInputs ++ [ vendorBuildHook ];
     };

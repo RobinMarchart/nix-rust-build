@@ -1,5 +1,5 @@
 lib:
-{ mkLockfileDerivation, mkSourceDerivation ,}:
+{ mkLockfileDerivation, mkSourceDerivation }:
 {
   src,
   pname,

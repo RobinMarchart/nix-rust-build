@@ -110,8 +110,8 @@ def parse_command [] {
   }
 }
 
-def main [script job src out] {
-  let job = open -r $job | from json
+def main [script src out] {
+  let job = open -r $env.NIX_ATTRS_JSON_FILE | from json | get rustRunBuildScript
   let out_dir = $out | path join output
   mkdir -v $out_dir
   let cores = if "1" == $env.enableParallelBuilding? {

@@ -17,7 +17,6 @@
           sets = map forSystem lib.systems.flakeExposed;
         in
         builtins.foldl' lib.attrsets.recursiveUpdate { } sets;
-
     in
     (eachSystem (
       system:
@@ -29,6 +28,7 @@
         compile_test = pkgs.callPackage ./compile_test.nix { inherit rust-build; };
       in
       {
+        formatter = pkgs.nixfmt-tree;
         packages = {
           inherit rust-build;
           default = rust-build;

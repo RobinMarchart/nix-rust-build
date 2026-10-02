@@ -75,6 +75,7 @@ lib.extendMkDerivation {
       dontStrip = crateType != "bin" && crateType != "cdylib";
     in
     {
+      __structuredAttrs = true;
       inherit
         separateDebugInfo
         dontStrip
@@ -86,8 +87,7 @@ lib.extendMkDerivation {
       dontPatch = true;
       dontConfigure = true;
       dontInstall = true;
-
-      rustBuildCrateJob = builtins.toJSON {
+      rustBuildCrate = {
         inherit
           rustcFlags
           cfgs
@@ -118,7 +118,6 @@ lib.extendMkDerivation {
           links
           ;
       };
-      passAsFile = passAsFile ++ [ "rustBuildCrateJob" ];
       nativeBuildInputs = nativeBuildInputs ++ [ buildCrateHook ];
     };
 }

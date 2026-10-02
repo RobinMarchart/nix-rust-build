@@ -20,5 +20,5 @@ rustPlatform.buildRustPackage (finalAttrs: {
   cargoLock = {
     lockFile = "${src}/Cargo.lock";
   };
-  passthru.tests = import ./tests.nix {inherit runCommand;} finalAttrs.finalPackage;
+  passthru.tests = import ./tests.nix { inherit runCommand; } finalAttrs.finalPackage;
 })

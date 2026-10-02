@@ -14,8 +14,8 @@ def vendor_config [out] {
   {source: ($config | transpose -ird) } | to toml
 }
 
-def main [packages_file out] {
-  let packages = open -r $packages_file | from json | transpose n p | get p
+def main [out] {
+  let packages = open -r $env.NIX_ATTRS_JSON_FILE | from json | get job | transpose n p | get p
   mkdir -v $out
   $packages | vendor_config $out | save ($out | path join "config.toml")
   for dep in $packages {
