@@ -96,7 +96,8 @@ def lib [job out] {
 
 def proc_macro [job out] {
   let name_hash = ([$job.pname $job.version] ++ $job.features) | str join ":🦀:" | hash sha256 | str substring 0..8
-  let lib_path = $out | path join $"lib($job.crateName)-($name_hash).so"
+  let extension = if  $nu.os-info.name == "macos" {"dylib"} else {"so"}
+  let lib_path = $out | path join $"lib($job.crateName)-($name_hash).($extension)"
   let metadata_path = $out | path join rust-lib.toml
   mkdir -v $out
   {lib: $lib_path, deps: [], metadata: {}, libPath: [], links: null} | to toml | save $metadata_path
