@@ -137,11 +137,12 @@ def compile [src] {
   let cores = if "1" == $env.enableParallelBuilding? {
     $env.NIX_BUILD_CORES | into int
   } else 1
+  let filteredDir = $job.filteredDir
   let args = (
     [
       --crate-name $job.crateName
       $"--edition=($job.edition)"
-      ($src| path join $job.entrypoint)
+      ($src| path join ($job.entrypoint | path relative-to $filteredDir))
       --check-cfg "cfg(docsrs,test)"
       -C embed-bitcode=no
       --cap-lints allow
@@ -169,8 +170,11 @@ def compile [src] {
   exec rustc ...$args
 }
 
-def main [ src out] {
-  let job = open -r $env.NIX_ATTRS_JSON_FILE | from json | get rustBuildCrate
+def main [out] {
+  let src = pwd
+  let args = open -r $env.NIX_ATTRS_JSON_FILE | from json
+  load-env $args
+  let job = $args.rustBuildCrate | upsert filteredDir (if $args.filteredDir == "." {""} else {$args.filteredDir})
   run_common env_from_context
     | merge_job (with_build_script $job)
     | merge_job ({envs: (run_common common_env $job $src)})

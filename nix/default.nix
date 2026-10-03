@@ -108,10 +108,16 @@ let
         inherit mkDerivation cargoMetadataHook;
       };
       mkBuildCrateDerivation = lib.makeOverridable (import ./build/crate.nix lib) {
-        inherit mkDerivation buildCrateHook;
+        inherit
+          mkDerivation
+          buildCrateHook
+          ;
       };
       mkRunBuildScriptDerivation = lib.makeOverridable (import ./build/run-script.nix lib) {
-        inherit mkDerivation runBuildScriptHook;
+        inherit
+          mkDerivation
+          runBuildScriptHook
+          ;
       };
       mkBuildPlan = lib.makeOverridable (import ./build/build-plan.nix lib) {
         inherit mkBuildCrateDerivation mkRunBuildScriptDerivation crateOverrides;

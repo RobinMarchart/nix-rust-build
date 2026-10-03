@@ -34,7 +34,8 @@
           default = rust-build;
         };
         checks = {
-          config = compile_test;
+          inherit compile_test;
+          inherit (compile_test) metadata_out;
         };
         devShells.default =
           pkgs.mkShell.override

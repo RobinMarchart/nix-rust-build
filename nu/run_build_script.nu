@@ -109,8 +109,12 @@ def parse_command [] {
   }
 }
 
-def main [script src out] {
-  let job = open -r $env.NIX_ATTRS_JSON_FILE | from json | get rustRunBuildScript
+def main [script out] {
+  let src = pwd
+  let args = open -r $env.NIX_ATTRS_JSON_FILE | from json
+  load-env $args
+  let job = $args.rustRunBuildScript | upsert filteredDir (if $args.filteredDir == "." {""} else {$args.filteredDir})
+  let filteredDir = $job.filteredDir
   let out_dir = $out | path join output
   mkdir -v $out_dir
   let cores = if "1" == $env.enableParallelBuilding? {
@@ -165,7 +169,7 @@ def main [script src out] {
     | flatten
     | run_common to_record
   )
-  cd ($src | path join $job.manifestPath | path dirname)
+  cd ($src | path join ($job.manifestPath | path relative-to $filteredDir) | path dirname)
   let seed = {
     metadata: {}
     linkArgs: []

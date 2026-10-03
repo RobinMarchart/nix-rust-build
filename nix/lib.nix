@@ -86,6 +86,7 @@ lib: rec {
 
   /**
     set the correct src depending on the value of mainWorkspace
+    filter: should filter to the path of the workspace member
   */
   addSrcRaw =
     { workspaceSrc, sources }:
@@ -96,9 +97,25 @@ lib: rec {
       ...
     }:
     (removeAttrs common [ "mainWorkspace" ])
-    // {
-      src = if mainWorkspace then workspaceSrc else sources.${"${pname}-${version}"}.path;
-    };
+    // (
+      if mainWorkspace then
+        (
+          let
+
+            inherit (common) manifestPath;
+            filteredDir = dirOf manifestPath;
+            src = builtins.path { path = "${workspaceSrc}/${filteredDir}"; };
+          in
+          {
+            inherit src filteredDir;
+          }
+        )
+      else
+        {
+          src = sources.${"${pname}-${version}"}.path;
+          filteredDir = "";
+        }
+    );
 
   getOverrideRaw = crateOverrides: name: crateOverrides.${name} or [ ];
 

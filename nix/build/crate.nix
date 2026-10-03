@@ -65,7 +65,6 @@ lib.extendMkDerivation {
       buildScriptRun ? null,
       links ? null,
       nativeBuildInputs ? [ ],
-      passAsFile ? [ ],
       doCheck ? false,
       enableParallelBuilding ? true,
       ...
@@ -83,8 +82,6 @@ lib.extendMkDerivation {
         doCheck
         enableParallelBuilding
         ;
-      dontUnpack = true;
-      dontPatch = true;
       dontConfigure = true;
       dontInstall = true;
       rustBuildCrate = {
@@ -118,6 +115,8 @@ lib.extendMkDerivation {
           links
           ;
       };
-      nativeBuildInputs = nativeBuildInputs ++ [ buildCrateHook ];
+      nativeBuildInputs = nativeBuildInputs ++ [
+        buildCrateHook
+      ];
     };
 }

@@ -1,4 +1,5 @@
 {
+  lib,
   pkg-config,
   mpv-unwrapped,
   rustPlatform,
@@ -10,6 +11,7 @@
   fetchFromGitHub,
   versionCheckHook,
   installShellFiles,
+  writeShellScript,
 }:
 let
   src = fetchFromGitHub {
@@ -18,6 +20,27 @@ let
     rev = "d80c41be578a2e6ebbf32a25757a92df56a693a2";
     hash = "sha256-lOy6V8kDZ36rEBb50JohzUlC62N1Get0gOXq/EOo9Pg=";
   };
+  mkFiltered =
+    path:
+    builtins.path {
+      path = src;
+      filter =
+        let
+          parents-gen =
+            path:
+            if path == "." then
+              [ ]
+            else
+              let
+                path' = dirOf path;
+              in
+              (parents-gen path') ++ [ "${src}/${path}" ];
+          parents = parents-gen path;
+          base = "${src}/${path}";
+        in
+        path: type: (builtins.any (p: p == path) parents) || (lib.hasPrefix base path);
+    };
+  sqlx-fake-cargo = writeShellScript "sqlx-fake-cargo" ''echo '{"workspace_root": "${mkFiltered ".sqlx"}"}' '';
   jellyhaj =
     (rust-build.withCrateOverrides {
       mpv-sys = {
@@ -46,6 +69,22 @@ let
           glib
         ];
         nativeBuildInputs = [ pkg-config ];
+      };
+      xtask = {
+        postPatch = "ln -s ${mkFiltered "src/args.rs"}/src ..";
+      };
+      config = {
+        postPatch = "ln -s ${mkFiltered "migrations"}/migrations ..";
+        CARGO = sqlx-fake-cargo;
+      };
+      jellyhaj-event-listener = {
+        CARGO = sqlx-fake-cargo;
+      };
+      jellyhaj-image = {
+        CARGO = sqlx-fake-cargo;
+      };
+      jellyhaj-login-view = {
+        CARGO = sqlx-fake-cargo;
       };
       jellyhaj-bin = {
         nativeBuildInputs = [ installShellFiles ];

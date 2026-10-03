@@ -4,7 +4,7 @@ rustBuildCrateHook() {
 	runHook preBuild
 	echo "src: $src"
 	echo "out: $out"
-	nu @run_build@ "$src" "$out"
+	nu @run_build@ "$out"
 	runHook postBuild
 	echo "Finished rustBuildCrateHook"
 }

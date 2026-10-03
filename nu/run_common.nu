@@ -1,11 +1,12 @@
 use ./version.nu
 
 export def common_env [job src] {
-  let manifestPath = $src | path join $job.manifestPath
+  let filteredDir = $job.filteredDir
+  let manifestPath = $src | path join ($job.manifestPath | path relative-to $filteredDir)
   let manifestDir = $manifestPath | path dirname
   let version = $job.version | version
   {
-    CARGO: (which cargo | get 0.path)
+    CARGO: ($env.CARGO? | default (which cargo | get 0.path))
     CARGO_MANIFEST_DIR: $manifestDir
     CARGO_MANIFEST_PATH: $job.manifestPath
     CARGO_PKG_VERSION: $job.version

@@ -68,8 +68,6 @@ lib.extendMkDerivation {
       __structuredAttrs = true;
       inherit buildScript;
       name = "build-script-run-${pname}-${version}";
-      dontUnpack = true;
-      dontPatch = true;
       dontConfigure = true;
       dontInstall = true;
       rustRunBuildScript = {
@@ -99,6 +97,8 @@ lib.extendMkDerivation {
           links
           ;
       };
-      nativeBuildInputs = nativeBuildInputs ++ [ runBuildScriptHook ];
+      nativeBuildInputs = nativeBuildInputs ++ [
+        runBuildScriptHook
+      ];
     };
 }
