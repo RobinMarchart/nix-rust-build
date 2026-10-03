@@ -217,10 +217,15 @@ lib: rec {
       prepareJob' = prepareJob "bin";
     in
     { common, bin }:
-    mkBuildCrateDerivation (prepareJob' {
-      inherit common;
-      job = bin;
-    });
+    mkBuildCrateDerivation (
+      (prepareJob' {
+        inherit common;
+        job = bin;
+      })
+      // {
+        meta.mainProgram = bin.targetName;
+      }
+    );
 
   addBinsRaw =
     {
