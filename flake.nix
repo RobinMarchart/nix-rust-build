@@ -29,10 +29,6 @@
       in
       {
         formatter = pkgs.nixfmt-tree;
-        packages = {
-          inherit rust-build;
-          default = rust-build;
-        };
         checks = {
           inherit compile_test;
           inherit (compile_test) metadata_out;

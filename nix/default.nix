@@ -15,21 +15,20 @@ let
         cargo
         rustdoc
         nushell
-        rustPlatform
         mkDerivation
         fetchurl
         makeSetupHook
-        runCommand
         mkStandardCrateRegistry
         defaultCrateRegistries
         extraCrateRegistries
-        rust-build
+        replace-output
         vendorBuildHook
         unpackSrcHook
         prepareLockfileHook
         buildCrateHook
         cargoMetadataHook
         runBuildScriptHook
+        fixupBuildScriptOutHook
         mkLockfileDerivation
         mkSourceDerivation
         collectDependencies
@@ -44,11 +43,11 @@ let
         inherit
           lib
           makeSetupHook
-          rust-build
           cargo
           rustc
           rustdoc
           nushell
+          replace-output
           ;
       };
     in
@@ -60,10 +59,9 @@ let
         cargo
         rustc
         nushell
-        rustPlatform
+        jq
         fetchurl
         makeSetupHook
-        runCommand
         ;
       rustdoc = pkgs.rustc;
       inherit crateRegistries;
@@ -73,8 +71,8 @@ let
         inherit mkStandardCrateRegistry;
       };
       extraCrateRegistries = { };
-      rust-build = lib.makeOverridable (import ./rust-build/rust-build.nix lib) {
-        inherit rustPlatform runCommand;
+      replace-output = lib.makeOverridable (import ./rust-build/replace-output.nix) {
+        inherit mkDerivation cargo rustc;
       };
       inherit (hooks)
         vendorBuildHook
@@ -83,6 +81,7 @@ let
         buildCrateHook
         cargoMetadataHook
         runBuildScriptHook
+        fixupBuildScriptOutHook
         ;
       mkLockfileDerivation = lib.makeOverridable (import ./vendor/parse-lockfile.nix lib) {
         inherit
@@ -117,6 +116,7 @@ let
         inherit
           mkDerivation
           runBuildScriptHook
+          fixupBuildScriptOutHook
           ;
       };
       mkBuildPlan = lib.makeOverridable (import ./build/build-plan.nix lib) {
@@ -133,59 +133,55 @@ let
       };
     };
   fix = lib.fixedPoints.makeExtensible combine;
-  extract =
-    attr:
-    let
-      out = {
-        inherit (attr)
-          targets
-          target
-          crateOverrides
-          rust-build
-          mkStandardCrateRegistry
-          crateRegistries
-          vendorBuildHook
-          unpackSrcHook
-          prepareLockfileHook
-          buildCrateHook
-          cargoMetadataHook
-          runBuildScriptHook
-          mkLockfileDerivation
-          mkSourceDerivation
-          collectDependencies
-          mkVendoredDerivation
-          mkMetadataDerivation
-          mkBuildCrateDerivation
-          mkRunBuildScriptDerivation
-          mkBuildPlan
-          build
-          ;
-        modify = f: extract (attr.extend f);
-        withCrateOverrides =
-          override:
-          extract (
-            attr.extend (
-              _: prev: {
-                crateOverrides = lib.rustBuild.mergeListAttrSets [
-                  prev.crateOverrides
-                  override
-                ];
-              }
-            )
-          );
-        withToolchain =
-          toolchain:
-          extract (
-            attr.extend (
-              _: _: {
-                rustc = toolchain;
-                cargo = toolchain;
-                rustdoc = toolchain;
-              }
-            )
-          );
-      };
-    in
-    out.rust-build.overrideAttrs { passthru = out; };
+  extract = attr: {
+    inherit (attr)
+      targets
+      target
+      crateOverrides
+      mkStandardCrateRegistry
+      crateRegistries
+      replace-output
+      vendorBuildHook
+      unpackSrcHook
+      prepareLockfileHook
+      buildCrateHook
+      cargoMetadataHook
+      runBuildScriptHook
+      fixupBuildScriptOutHook
+      mkLockfileDerivation
+      mkSourceDerivation
+      collectDependencies
+      mkVendoredDerivation
+      mkMetadataDerivation
+      mkBuildCrateDerivation
+      mkRunBuildScriptDerivation
+      mkBuildPlan
+      build
+      ;
+    modify = f: extract (attr.extend f);
+    withCrateOverrides =
+      override:
+      extract (
+        attr.extend (
+          _: prev: {
+            crateOverrides = lib.rustBuild.mergeListAttrSets [
+              prev.crateOverrides
+              override
+            ];
+          }
+        )
+      );
+    withToolchain =
+      toolchain:
+      extract (
+        attr.extend (
+          _: _: {
+            rustc = toolchain;
+            cargo = toolchain;
+            rustdoc = toolchain;
+          }
+        )
+      );
+  };
 in
 extract fix

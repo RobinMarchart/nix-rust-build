@@ -12,6 +12,7 @@
   versionCheckHook,
   installShellFiles,
   writeShellScript,
+  breakpointHook,
 }:
 let
   src = fetchFromGitHub {

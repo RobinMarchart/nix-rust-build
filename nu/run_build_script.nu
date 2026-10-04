@@ -109,20 +109,22 @@ def parse_command [] {
   }
 }
 
-def main [script out] {
-  let src = pwd
+def main [script] {
+  let src = $env.pwd
+  let out_dir = $env.out
+  mkdir $out_dir
+  let script_out_dir = $out_dir | path join output
+  mkdir -v $script_out_dir
   let args = open -r $env.NIX_ATTRS_JSON_FILE | from json
   load-env $args
   let job = $args.rustRunBuildScript | upsert filteredDir (if $args.filteredDir == "." {""} else {$args.filteredDir})
   let filteredDir = $job.filteredDir
-  let out_dir = $out | path join output
-  mkdir -v $out_dir
   let cores = if "1" == $env.enableParallelBuilding? {
     $env.NIX_BUILD_CORES | into int
   } else 1
   load-env (run_common common_env $job $src | merge deep -s append {PATH: $env.PATH})
   $env.CARGO_MAKEFLAGS = $"-j ($cores)"
-  $env.OUT_DIR = $out_dir
+  $env.OUT_DIR = $script_out_dir
   $env.TARGET = $job.target
   $env.HOST = run-external rustc "--print=host-tuple" | str trim
   $env.NUM_JOBS = $cores
@@ -202,7 +204,7 @@ def main [script out] {
   if $output.error? == true {
     exit 1
   } else {
-    $output | to toml | save ($out | path join result.toml)
+    $output | to toml | save ($out_dir | path join result.toml)
   }
   
 }

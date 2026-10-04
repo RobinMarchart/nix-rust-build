@@ -1,11 +1,11 @@
 {
   lib,
   makeSetupHook,
-  rust-build,
   cargo,
   rustc,
   rustdoc,
   nushell,
+  replace-output,
 }:
 let
   file =
@@ -147,4 +147,11 @@ in
           rustdoc
           ;
       };
+  fixupBuildScriptOutHook = lib.makeOverridable (
+    { makeSetupHook, replace-output }:
+    makeSetupHook {
+      name = "fixupBuildScriptOutHook";
+      propagatedBuildInputs = [ replace-output ];
+    } (file ./fixup-build-script-out.sh)
+  ) { inherit makeSetupHook replace-output; };
 }

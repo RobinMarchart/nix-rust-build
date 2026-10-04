@@ -2,6 +2,7 @@ lib:
 {
   mkDerivation,
   runBuildScriptHook,
+  fixupBuildScriptOutHook,
 }:
 lib.extendMkDerivation {
   constructDrv = mkDerivation;
@@ -99,6 +100,7 @@ lib.extendMkDerivation {
       };
       nativeBuildInputs = nativeBuildInputs ++ [
         runBuildScriptHook
+        fixupBuildScriptOutHook
       ];
     };
 }
