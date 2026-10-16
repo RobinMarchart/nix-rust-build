@@ -4,7 +4,7 @@ rustBuildCrateHook() {
 	runHook preBuild
 	echo "src: $src"
 	echo "out: $out"
-	nu @run_build@ "$out"
+	rust-build-helper run-build "$(pwd)" "$out" "$NIX_ATTRS_JSON_FILE"
 	runHook postBuild
 	echo "Finished rustBuildCrateHook"
 }

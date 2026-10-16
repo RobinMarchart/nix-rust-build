@@ -4,7 +4,7 @@
   cargo,
   rustc,
   rustdoc,
-  nushell,
+  helper,
   replace-output,
 }:
 let
@@ -14,97 +14,65 @@ let
       inherit path;
       recursive = false;
     };
-  nu_files =
-    paths:
-    lib.fileset.toSource {
-      root = ../../nu;
-      fileset = lib.fileset.unions paths;
-    };
 in
 {
   prepareLockfileHook = lib.makeOverridable (
-    { makeSetupHook, nushell }:
+    { makeSetupHook, helper }:
     makeSetupHook {
       name = "prepareLockfileHook";
-      propagatedBuildInputs = [ nushell ];
-      substitutions = {
-        prepare_lockfile = "${
-          nu_files [
-            ../../nu/version.nu
-            ../../nu/prepare_lockfile.nu
-          ]
-        }/prepare_lockfile.nu";
-      };
+      propagatedBuildInputs = [ helper ];
     } (file ./prepare-lockfile.sh)
-  ) { inherit makeSetupHook nushell; };
+  ) { inherit makeSetupHook helper; };
   unpackSrcHook = lib.makeOverridable (
-    { makeSetupHook, nushell }:
+    { makeSetupHook, helper }:
     makeSetupHook {
       name = "unpackSrcHook";
-      propagatedBuildInputs = [ nushell ];
-      substitutions = {
-        install_src_hash = file ../../nu/install_src_hash.nu;
-      };
+      propagatedBuildInputs = [ helper ];
     } (file ./unpack-src.sh)
-  ) { inherit makeSetupHook nushell; };
+  ) { inherit makeSetupHook helper; };
   vendorBuildHook = lib.makeOverridable (
-    { makeSetupHook, nushell }:
+    { makeSetupHook, helper }:
     makeSetupHook {
       name = "vendorBuildHook";
-      propagatedBuildInputs = [ nushell ];
-      substitutions = {
-        write_vendor = file ../../nu/write_vendor.nu;
-      };
+      propagatedBuildInputs = [ helper ];
     } (file ./vendor-build.sh)
-  ) { inherit makeSetupHook nushell; };
+  ) { inherit makeSetupHook helper; };
   cargoMetadataHook = lib.makeOverridable (
     {
       makeSetupHook,
-      nushell,
+      helper,
       cargo,
     }:
     makeSetupHook {
       name = "cargoMetadataHook";
       propagatedBuildInputs = [
-        nushell
+        helper
         cargo
       ];
-      substitutions = {
-        metadata = file ../../nu/metadata.nu;
-      };
     } (file ./cargo-metadata.sh)
-  ) { inherit makeSetupHook nushell cargo; };
+  ) { inherit makeSetupHook helper cargo; };
   buildCrateHook =
     lib.makeOverridable
       (
         {
           makeSetupHook,
-          nushell,
+          helper,
           rustc,
           cargo,
         }:
         makeSetupHook {
           name = "buildCrateHook";
           propagatedBuildInputs = [
-            nushell
+            helper
             rustc
             cargo
           ];
-          substitutions = {
-            run_build = "${
-              nu_files [
-                ../../nu/run_build.nu
-                ../../nu/run_common.nu
-                ../../nu/version.nu
-              ]
-            }/run_build.nu";
-          };
         } ./build.sh
       )
       {
         inherit
           makeSetupHook
-          nushell
+          helper
           rustc
           cargo
           ;
@@ -114,7 +82,7 @@ in
       (
         {
           makeSetupHook,
-          nushell,
+          helper,
           rustc,
           cargo,
           rustdoc,
@@ -122,26 +90,17 @@ in
         makeSetupHook {
           name = "runBuildScriptHook";
           propagatedBuildInputs = [
-            nushell
+            helper
             cargo
             rustc
             rustdoc
           ];
-          substitutions = {
-            run_build_script = "${
-              nu_files [
-                ../../nu/run_build_script.nu
-                ../../nu/run_common.nu
-                ../../nu/version.nu
-              ]
-            }/run_build_script.nu";
-          };
         } ./run-build-script.sh
       )
       {
         inherit
           makeSetupHook
-          nushell
+          helper
           cargo
           rustc
           rustdoc

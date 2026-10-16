@@ -86,7 +86,7 @@ def lib [job out] {
     deps: ($job.allDeps? | default [])
     metadata: ($job.metadata | default {})
     libPath: ($job.libPath | default [])
-    links: $job.links
+    links: $job.links?
   } | to toml | save $metadata_path
   {
     pwd: $out
@@ -175,7 +175,7 @@ def main [out] {
   let src = pwd
   let args = open -r $env.NIX_ATTRS_JSON_FILE | from json
   load-env $args
-  let job = $args.rustBuildCrate | upsert filteredDir (if $args.filteredDir == "." {""} else {$args.filteredDir})
+  let job = $args | update filteredDir (if $args.filteredDir == "." {""} else {$args.filteredDir})
   run_common env_from_context
     | merge_job (with_build_script $job)
     | merge_job ({envs: (run_common common_env $job $src)})

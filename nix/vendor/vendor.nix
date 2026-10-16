@@ -21,7 +21,7 @@ lib.extendMkDerivation {
       passthru = { inherit collectedCrates; };
       name = "rust-vendored-src";
       preferLocalBuild = true;
-      job = collectedCrates;
+      packages = builtins.attrValues collectedCrates;
       dontUnpack = true;
       nativeBuildInputs = nativeBuildInputs ++ [ vendorBuildHook ];
     };

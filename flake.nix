@@ -25,13 +25,24 @@
           inherit system;
         };
         rust-build = import ./nix/default.nix pkgs;
-        compile_test = pkgs.callPackage ./compile_test.nix { inherit rust-build; };
+
+        compile_test_self = pkgs.callPackage ./compile_test_self.nix { inherit rust-build; };
+        compile_test_jellyhaj = pkgs.callPackage ./compile_test_jellyhaj.nix { inherit rust-build; };
       in
       {
+        inherit rust-build;
         formatter = pkgs.nixfmt-tree;
+        packages = {
+          inherit
+            compile_test_self
+            compile_test_jellyhaj
+            ;
+        };
         checks = {
-          inherit compile_test;
-          inherit (compile_test) metadata_out;
+          inherit
+            compile_test_self
+            compile_test_jellyhaj
+            ;
         };
         devShells.default =
           pkgs.mkShell.override

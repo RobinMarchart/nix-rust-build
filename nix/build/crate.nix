@@ -7,31 +7,6 @@ lib.extendMkDerivation {
   constructDrv = mkDerivation;
   excludeDrvArgNames = [
     "specialArg"
-    "rustcFlags"
-    "cfgs"
-    "linkArgs"
-    "manifestPath"
-    "authors"
-    "description"
-    "homepage"
-    "repository"
-    "license"
-    "licenseFile"
-    "rustVersion"
-    "readme"
-    "target"
-    "features"
-    "allFeatures"
-    "crateName"
-    "edition"
-    "deps"
-    "optimize"
-    "debuginfo"
-    "crateType"
-    "entrypoint"
-    "targetName"
-    "buildScriptRun"
-    "links"
   ];
   extendDrvArgs =
     _final:
@@ -42,15 +17,12 @@ lib.extendMkDerivation {
       linkArgs ? [ ],
       manifestPath,
       version,
-      authors ? null,
       pname,
-      description ? null,
-      homepage ? null,
+      description ? "",
+      longDescription ? "",
       repository ? null,
-      license ? null,
-      licenseFile ? null,
+      homepage ? repository,
       rustVersion ? null,
-      readme ? null,
       target,
       features ? [ ],
       allFeatures ? [ ],
@@ -62,11 +34,10 @@ lib.extendMkDerivation {
       crateType,
       entrypoint,
       targetName,
-      buildScriptRun ? null,
-      links ? null,
       nativeBuildInputs ? [ ],
       doCheck ? false,
       enableParallelBuilding ? true,
+      meta ? { },
       ...
     }:
     let
@@ -84,39 +55,37 @@ lib.extendMkDerivation {
         ;
       dontConfigure = true;
       dontInstall = true;
-      rustBuildCrate = {
-        inherit
-          rustcFlags
-          cfgs
-          linkArgs
-          manifestPath
-          version
-          authors
-          pname
-          description
-          homepage
-          repository
-          license
-          licenseFile
-          rustVersion
-          readme
-          target
-          features
-          allFeatures
-          crateName
-          edition
-          deps
-          optimize
-          debuginfo
-          crateType
-          entrypoint
-          targetName
-          buildScriptRun
-          links
-          ;
-      };
+      inherit
+        rustcFlags
+        cfgs
+        linkArgs
+        manifestPath
+        version
+        pname
+        rustVersion
+        target
+        features
+        allFeatures
+        crateName
+        edition
+        deps
+        optimize
+        debuginfo
+        crateType
+        entrypoint
+        targetName
+        ;
       nativeBuildInputs = nativeBuildInputs ++ [
         buildCrateHook
       ];
+      meta = {
+        inherit
+          description
+          longDescription
+          homepage
+          ;
+        sourceProvenance = [ lib.sourceTypes.fromSource ];
+      }
+      // meta;
     };
 }

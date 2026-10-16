@@ -6,7 +6,6 @@ def parse_command [] {
   let line = $in
   let res = $line | parse -r r#'^\s*cargo(?<cargo>::?)(?<cmd>[a-z\-_]+)=(?<full>(?:(?<name>[^=\s]+)=)?(?<val>.*))$'#
   if $res == [] {
-    print $line
   } else {
     let res = $res.0
     match $res.cmd {
@@ -115,23 +114,27 @@ def main [script] {
   mkdir $out_dir
   let script_out_dir = $out_dir | path join output
   mkdir -v $script_out_dir
+  $env.RUST_BACKTRACE = "1"
   let args = open -r $env.NIX_ATTRS_JSON_FILE | from json
   load-env $args
-  let job = $args.rustRunBuildScript | upsert filteredDir (if $args.filteredDir == "." {""} else {$args.filteredDir})
+  let job = $args | update filteredDir (if $args.filteredDir == "." {""} else {$args.filteredDir})
   let filteredDir = $job.filteredDir
   let cores = if "1" == $env.enableParallelBuilding? {
     $env.NIX_BUILD_CORES | into int
   } else 1
   load-env (run_common common_env $job $src | merge deep -s append {PATH: $env.PATH})
-  $env.CARGO_MAKEFLAGS = $"-j ($cores)"
-  $env.OUT_DIR = $script_out_dir
-  $env.TARGET = $job.target
-  $env.HOST = run-external rustc "--print=host-tuple" | str trim
-  $env.NUM_JOBS = $cores
-  $env.RUSTC = which rustc | get 0.path
-  $env.RUSTDOC = which rustdoc | get 0.path
-  $env.CARGO_ENCODED_RUSTFLAGS = $job.rustcFlags | str join "\u{1f}"
-  if $job.links != null {
+  load-env {
+    CARGO_MAKEFLAGS: $"-j ($cores)"
+    OUT_DIR: $script_out_dir
+    TARGET : $job.target
+    HOST : (run-external rustc "--print=host-tuple" | str trim)
+    NUM_JOBS : $cores
+    RUSTC : (which rustc | get 0.path)
+    RUSTDOC : (which rustdoc | get 0.path)
+    CARGO_ENCODED_RUSTFLAGS : ($job.rustcFlags | str join "\u{1f}")
+  }
+  
+  if $job.links? != null {
     $env.CARGO_MANIFEST_LINKS = $job.links
   }
   if $job.optimize {
@@ -185,13 +188,15 @@ def main [script] {
     checkCfgs: []
     envs: {}
   }
+  print ($env.TARGET)
+  print ($env | table -ew 150)
+  run-external printenv
   let script_run = run-external $script | complete 
   let output = (
     $script_run.stdout
     | split row "\n"
     | each {parse_command}
     | reduce -f $seed {|i,acc|
-      print ($i | to text)
       $acc | merge deep -s append $i
     }
   )

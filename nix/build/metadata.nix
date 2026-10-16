@@ -20,6 +20,7 @@ lib.extendMkDerivation {
       ...
     }:
     {
+      __structuredAttrs = true;
       inherit
         vendorDir
         target

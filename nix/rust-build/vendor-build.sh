@@ -2,7 +2,7 @@
 rustVendorBuildHook() {
 	echo "Executing rustVendorBuildHook"
 	runHook preBuild
-	nu @write_vendor@ "$out"
+	rust-build-helper write-vendor "$out" "$NIX_ATTRS_JSON_FILE"
 	runHook postBuild
 	echo "Finished rustVendorBuildHook"
 }

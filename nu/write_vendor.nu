@@ -15,7 +15,9 @@ def vendor_config [out] {
 }
 
 def main [out] {
-  let packages = open -r $env.NIX_ATTRS_JSON_FILE | from json | get job | transpose n p | get p
+  let packages = open -r $env.NIX_ATTRS_JSON_FILE | from json | get packages
+  print ($packages | table -ew 150)
+  let packages = $packages | transpose n p | get p
   mkdir -v $out
   $packages | vendor_config $out | save ($out | path join "config.toml")
   for dep in $packages {

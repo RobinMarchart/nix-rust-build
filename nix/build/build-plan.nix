@@ -12,7 +12,7 @@ lib:
 let
   metadata_val = builtins.fromJSON (builtins.readFile metadata_out);
   packages = metadata_val.packages;
-  workspace = metadata_val.workspace;
+  workspace = metadata_val.workspaceMembers;
   mainPackage = metadata_val.mainPackage or null;
 
   buildPlan = (

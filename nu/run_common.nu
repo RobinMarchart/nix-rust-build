@@ -14,15 +14,15 @@ export def common_env [job src] {
     CARGO_PKG_VERSION_MINOR: ($version.minor | default "")
     CARGO_PKG_VERSION_PATCH: ($version.patch | default "")
     CARGO_PKG_VERSION_PRE: ($version.pre | default "")
-    CARGO_PKG_AUTHORS: ($job.authors | str join " ")
+    CARGO_PKG_AUTHORS: ($job.authors? | default [] | str join " ")
     CARGO_PKG_NAME: $job.pname
-    CARGO_PKG_DESCRIPTION: ($job.description | default "")
-    CARGO_PKG_HOMEPAGE: ($job.homepage | default "")
-    CARGO_PKG_REPOSITORY: ($job.repository | default "")
-    CARGO_PKG_LICENSE: ($job.license | default "")
-    CARGO_PKG_LICENSE_FILE: ($job.licenseFile | default "")
-    CARGO_PKG_RUST_VERSION: ($job.rustVersion | default "")
-    CARGO_PKG_README: ($job.readme | default "")
+    CARGO_PKG_DESCRIPTION: ($job.description? | default "")
+    CARGO_PKG_HOMEPAGE: ($job.homepage? | default "")
+    CARGO_PKG_REPOSITORY: ($job.repository? | default "")
+    CARGO_PKG_LICENSE: ($job.license? | default "")
+    CARGO_PKG_LICENSE_FILE: ($job.licenseFile? | default "")
+    CARGO_PKG_RUST_VERSION: ($job.rustVersion? | default "")
+    CARGO_PKG_README: ($job.readme? | default "")
     CARGO_CRATE_NAME: $job.crateName
     PATH: [$manifestDir]
   }

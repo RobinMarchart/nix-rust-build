@@ -71,33 +71,31 @@ lib.extendMkDerivation {
       name = "build-script-run-${pname}-${version}";
       dontConfigure = true;
       dontInstall = true;
-      rustRunBuildScript = {
-        inherit
-          rustcFlags
-          cfgs
-          linkArgs
-          manifestPath
-          version
-          authors
-          pname
-          description
-          homepage
-          repository
-          license
-          licenseFile
-          rustVersion
-          readme
-          target
-          features
-          allFeatures
-          crateName
-          edition
-          deps
-          optimize
-          debuginfo
-          links
-          ;
-      };
+      inherit
+        rustcFlags
+        cfgs
+        linkArgs
+        manifestPath
+        version
+        authors
+        pname
+        description
+        homepage
+        repository
+        license
+        licenseFile
+        rustVersion
+        readme
+        target
+        features
+        allFeatures
+        crateName
+        edition
+        deps
+        optimize
+        debuginfo
+        links
+        ;
       nativeBuildInputs = nativeBuildInputs ++ [
         runBuildScriptHook
         fixupBuildScriptOutHook

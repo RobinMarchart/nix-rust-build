@@ -14,13 +14,14 @@ let
         rustc
         cargo
         rustdoc
-        nushell
+        rustPlatform
         mkDerivation
         fetchurl
         makeSetupHook
         mkStandardCrateRegistry
         defaultCrateRegistries
         extraCrateRegistries
+        helper
         replace-output
         vendorBuildHook
         unpackSrcHook
@@ -46,8 +47,8 @@ let
           cargo
           rustc
           rustdoc
-          nushell
           replace-output
+          helper
           ;
       };
     in
@@ -58,8 +59,7 @@ let
       inherit (pkgs)
         cargo
         rustc
-        nushell
-        jq
+        rustPlatform
         fetchurl
         makeSetupHook
         ;
@@ -73,6 +73,9 @@ let
       extraCrateRegistries = { };
       replace-output = lib.makeOverridable (import ./rust-build/replace-output.nix) {
         inherit mkDerivation cargo rustc;
+      };
+      helper = lib.makeOverridable (import ./rust-build/helper.nix) {
+        inherit lib rustPlatform;
       };
       inherit (hooks)
         vendorBuildHook
@@ -141,6 +144,7 @@ let
       mkStandardCrateRegistry
       crateRegistries
       replace-output
+      helper
       vendorBuildHook
       unpackSrcHook
       prepareLockfileHook
@@ -182,6 +186,7 @@ let
           }
         )
       );
+    __functor = self: arg: self.build arg;
   };
 in
 extract fix

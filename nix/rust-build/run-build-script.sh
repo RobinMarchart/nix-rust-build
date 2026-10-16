@@ -6,7 +6,7 @@ rustRunBuildScriptHook() {
 	echo "src: $src"
 	echo "out: $out"
 	echo "path: $PATH"
-	nu @run_build_script@ "${buildScript}/bin/build_script"
+	rust-build-helper run-build-script "$(pwd)" "$out" "$NIX_ATTRS_JSON_FILE" "${buildScript}/bin/build_script"
 	runHook postBuild
 	echo "Finished rustRunBuildScriptHook"
 }
